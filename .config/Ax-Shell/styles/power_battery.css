@@ -1,0 +1,53 @@
+#performance-button,
+#balanced-button,
+#power-save-button {
+  transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  background-color: var(--surface);
+  font-weight: bold;
+  font-size: 30px;
+}
+
+#power-save-button {
+  padding: 5px 24px;
+}
+
+#performance-button {
+  padding: 5px 28px 5px 21px;
+}
+
+#balanced-button {
+  padding: 5px 32px 5px 16px;
+}
+
+#performance-button label,
+#balanced-button label,
+#power-save-button label {
+  color: var(--outline);
+  transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+#performance-button:hover,
+#balanced-button:hover,
+#power-save-button:hover {
+  background-color: var(--surface-bright);
+}
+
+#performance-button:hover label,
+#balanced-button:hover label,
+#power-save-button:hover label {
+  /* color: var(--shadow); */
+  color: var(--primary);
+}
+
+#performance-button.active,
+#balanced-button.active,
+#power-save-button.active {
+  background-color: var(--primary);
+  font-weight: bolder;
+}
+
+#performance-button.active label,
+#balanced-button.active label,
+#power-save-button.active label {
+  color: var(--shadow);
+}

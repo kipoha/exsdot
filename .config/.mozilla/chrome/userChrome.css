@@ -1,0 +1,45 @@
+:root {
+  --tab-bg-color: #1e1e2e !important;
+  --tab-text-color: #cdd6f4 !important;
+  --tab-selected-bg-color: #313244 !important;
+  --tab-selected-text-color: #f5e0dc !important;
+  --toolbar-bg-color: #1e1e2e !important;
+}
+
+.tabbrowser-tab:not([selected="true"]) {
+  background-color: var(--tab-bg-color) !important;
+  color: var(--tab-text-color) !important;
+}
+
+.tabbrowser-tab[selected="true"] {
+  background-color: var(--tab-selected-bg-color) !important;
+  color: var(--tab-selected-text-color) !important;
+}
+
+#TabsToolbar, #nav-bar {
+  background-color: var(--toolbar-bg-color) !important;
+}
+
+.tab-background {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.tabbrowser-tab {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.tab-close-button {
+  display: none !important;
+}
+
+.titlebar-buttonbox-container {
+  display: none !important;
+}
+
+#titlebar {
+  height: 0px !important;
+  min-height: 0px !important;
+  max-height: 0px !important;
+}

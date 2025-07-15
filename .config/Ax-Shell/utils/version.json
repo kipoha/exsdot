@@ -1,0 +1,7 @@
+{
+	"version": "0.0.8",
+	"changelog": [
+    "<b>fix:</b> Tabler Icons font not being recognized by some systems. (<a href='https://github.com/Axenide/Ax-Shell/pull/146'>#146</a>)\nYou can safely delete <b>~/.fonts/tabler-icons/</b> after updating. (Or leave it, it won't cause any issues.)",
+    "Herobrine removed."
+	]
+}
