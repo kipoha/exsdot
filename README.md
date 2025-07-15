@@ -15,6 +15,9 @@ This dot is made only for my convenience, PC configuration and needs, I do not t
 - [Catppuccin Mocha Flamingo](https://addons.mozilla.org/en-US/firefox/addon/catppuccin-mocha-flamingo-git/)
 - [Vimium](https://addons.mozilla.org/en-US/firefox/addon/vimium-ff/)
 
+## MAIN TOOL
+- [Ax-Shell](https://github.com/axenide/Ax-Shell)
+
 ## DEPENDENCIES
 All necessary dependencies and software are located in the [file](scripts/packages.py)
 
