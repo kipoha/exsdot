@@ -98,7 +98,7 @@ sddm-greeter --test-mode --theme /usr/share/sddm/themes/catppuccin-mocha/
 
 # BUILD
 ```bash
-git clone https://github.com/kipoha/arch-dotfiles.git
-cd arch-dotfiles
+git clone https://github.com/kipoha/exsdot.git
+cd exsdot
 make
 ```
