@@ -1,0 +1,7 @@
+#osd-widget .osd-box {
+  background-color: rgba(0, 0, 0, 0.75);
+  border-radius: 12px;
+  padding: 12px 24px;
+  color: white;
+  font-size: 24px;
+}

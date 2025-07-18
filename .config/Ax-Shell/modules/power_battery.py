@@ -1,6 +1,7 @@
 import logging
 import subprocess
 
+import config.data as data
 from fabric.widgets.box import Box
 from fabric.widgets.button import Button
 
@@ -20,6 +21,12 @@ class PowerBattery(Box):
             padding=10,
             size=10,
         )
+
+        vertical_layout = False
+
+        if data.PANEL_THEME == "Panel" and (data.BAR_POSITION in ["Left", "Right"] or data.PANEL_POSITION in ["Start", "End"]):
+            vertical_layout = True
+
         self.performance_button = Button(
             label="󰓅",
             name="performance-button",
@@ -52,7 +59,7 @@ class PowerBattery(Box):
         ]
         self.container_1 = Box(
             name="power-battery-container",
-            orientation="horizontal",
+            orientation="h" if not vertical_layout else "v",
             h_expand=True,
             h_fill=True,
             v_expand=False,

@@ -92,11 +92,14 @@ class Widgets(Box):
         )
         self.power_player_box = Box(
             name="power-player-box",
-            orientation="v",
+            orientation="v" if not vertical_layout else "h",
             spacing=8,
             children=[
                 self.power_battery,
                 self.player
+            ] if not vertical_layout else [
+                self.player,
+                self.power_battery
             ],
             h_expand=False,
             v_expand=False,
