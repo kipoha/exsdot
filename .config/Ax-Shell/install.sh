@@ -36,6 +36,7 @@ PACKAGES=(
   python-setproctitle
   python-toml
   python-watchdog
+  power-profiles-daemon
   swappy
   swww
   tesseract
