@@ -44,7 +44,7 @@ class PowerBattery(Box):
             on_clicked=self.set_balanced,
         )
         self.power_save_button = Button(
-            label="󱐌",
+            label="󰌪",
             name="power-save-button",
             markup="Power Save",
             h_expand=False,
