@@ -1,0 +1,975 @@
+@keyframes ripple {
+  to {
+    background-size: 1000% 1000%;
+  }
+}
+
+@keyframes ripple-on-slider {
+  to {
+    background-size: auto, 1000% 1000%;
+  }
+}
+
+@keyframes ripple-on-headerbar {
+  from {
+    background-image: radial-gradient(circle, {{colors.primary.default.hex}} 0%, transparent 0%);
+  }
+  to {
+    background-image: radial-gradient(circle, {{colors.primary.default.hex}} 100%, transparent 0%);
+  }
+}
+
+* {
+  background-clip: padding-box;
+  -GtkToolButton-icon-spacing: 0;
+  -GtkTextView-error-underline-color: #E53935;
+  -GtkScrolledWindow-scrollbar-spacing: 0;
+  -GtkToolItemGroup-expander-size: 11;
+  -GtkWidget-text-handle-width: 24;
+  -GtkWidget-text-handle-height: 24;
+  -GtkDialog-button-spacing: 6;
+  -GtkDialog-action-area-border: 6;
+  outline-style: solid;
+  outline-width: 2px;
+  outline-color: transparent;
+  outline-offset: -4px;
+  -gtk-outline-radius: 6px;
+  -gtk-secondary-caret-color: {{colors.primary.default.hex}};
+}
+
+*:focus {
+  outline-color: alpha(currentColor, 0.1);
+}
+
+XfdesktopIconView.view:active, calendar.raven-calendar:selected, box.vertical > widget > widget:selected, calendar:selected, popover.background modelbutton.flat:selected,
+popover.background .menuitem.button.flat:selected, .csd treeview.view:selected, .background.csd .view:selected {
+  color: rgba(0, 0, 0, 0.87);
+  background-color: alpha(currentColor, 0.1);
+}
+
+.nemo-window .view selection, .nemo-window .view:selected, .nautilus-window notebook .view:not(treeview) selection, .nautilus-window notebook .view:not(treeview):selected, .nautilus-window flowboxchild:selected .icon-item-background, label selection, flowbox flowboxchild:selected {
+  color: {{colors.primary.default.hex}};
+  background-color: {{colors.primary_container.default.hex}};
+}
+
+.nemo-window .nemo-window-pane widget.entry:selected, window.background.csd evview.view.content-view:selected, window.background.csd evview.view.content-view:selected:backdrop, .nautilus-window.background.csd notebook widget.view:selected, entry selection, textview text selection:focus, textview text selection, widget.view:selected, .view:selected {
+  color: {{colors.on_primary.default.hex}};
+  background-color: {{colors.primary.default.hex}};
+}
+
+.linked:not(.vertical) > button, .linked:not(.vertical) > entry {
+  border-radius: 0;
+}
+
+.linked:not(.vertical) > button:first-child, .linked:not(.vertical) > entry:first-child {
+  border-top-left-radius: 6px;
+  border-bottom-left-radius: 6px;
+}
+
+.linked:not(.vertical) > button:last-child, .linked:not(.vertical) > entry:last-child {
+  border-top-right-radius: 6px;
+  border-bottom-right-radius: 6px;
+}
+
+.linked:not(.vertical) > button:only-child, .linked:not(.vertical) > entry:only-child {
+  border-radius: 6px;
+}
+
+.linked.vertical > button, .linked.vertical > entry {
+  border-radius: 0;
+}
+
+.linked.vertical > button:first-child, .linked.vertical > entry:first-child {
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+}
+
+.linked.vertical > button:last-child, .linked.vertical > entry:last-child {
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
+}
+
+.linked.vertical > button:only-child, .linked.vertical > entry:only-child {
+  border-radius: 6px;
+}
+
+/***************
+ * Base States *
+ ***************/
+.background {
+  background-color: {{colors.surface.default.hex}};
+  color: {{colors.on_surface.default.hex}};
+}
+
+dnd {
+  color: {{colors.on_surface.default.hex}};
+}
+
+.background:backdrop {
+  background-color: {{colors.surface_dim.default.hex}};
+  color: {{colors.on_surface_variant.default.hex}};
+}
+
+.csd.background {
+  border-radius: 12px;
+}
+
+/*************
+ * Scrolling *
+ *************/
+scrollbar {
+  background-color: {{colors.surface.default.hex}};
+  transition: 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+* {
+  -GtkScrollbar-has-backward-stepper: false;
+  -GtkScrollbar-has-forward-stepper: false;
+}
+
+scrollbar.top {
+  border-bottom: 1px solid alpha({{colors.outline.default.hex}}, 0.3);
+}
+
+scrollbar.bottom {
+  border-top: 1px solid alpha({{colors.outline.default.hex}}, 0.3);
+}
+
+scrollbar.left {
+  border-right: 1px solid alpha({{colors.outline.default.hex}}, 0.3);
+}
+
+scrollbar.right {
+  border-left: 1px solid alpha({{colors.outline.default.hex}}, 0.3);
+}
+
+scrollbar:backdrop {
+  background-color: {{colors.surface_container_low.default.hex}};
+  border-color: alpha({{colors.outline.default.hex}}, 0.3);
+  transition: 200ms ease-out;
+}
+
+scrollbar slider {
+  min-width: 6px;
+  min-height: 6px;
+  margin: -1px;
+  border: 4px solid transparent;
+  border-radius: 8px;
+  background-clip: padding-box;
+  background-color: alpha({{colors.on_surface_variant.default.hex}}, 0.5);
+}
+
+scrollbar slider:hover {
+  background-color: alpha({{colors.on_surface_variant.default.hex}}, 0.7);
+}
+
+scrollbar slider:hover:active {
+  background-color: {{colors.on_surface_variant.default.hex}};
+}
+
+scrollbar slider:backdrop {
+  background-color: alpha({{colors.on_surface_variant.default.hex}}, 0.4);
+}
+
+scrollbar slider:disabled {
+  background-color: transparent;
+}
+
+scrollbar.fine-tune slider {
+  min-width: 4px;
+  min-height: 4px;
+}
+
+scrollbar.fine-tune.horizontal slider {
+  border-width: 2px 4px;
+}
+
+scrollbar.fine-tune.vertical slider {
+  border-width: 4px 2px;
+}
+
+scrollbar.overlay-indicator:not(.dragging):not(.hovering) {
+  border-color: transparent;
+  opacity: 0.4;
+  background-color: transparent;
+}
+
+scrollbar.overlay-indicator:not(.dragging):not(.hovering) slider {
+  margin: 0;
+  min-width: 3px;
+  min-height: 3px;
+  background-color: {{colors.on_surface.default.hex}};
+  border: 1px solid {{colors.surface.default.hex}};
+}
+
+scrollbar.overlay-indicator:not(.dragging):not(.hovering) button {
+  min-width: 5px;
+  min-height: 5px;
+  background-color: {{colors.on_surface.default.hex}};
+  background-clip: padding-box;
+  border-radius: 100px;
+  border: 1px solid {{colors.surface.default.hex}};
+  -gtk-icon-source: none;
+}
+
+scrollbar.overlay-indicator:not(.dragging):not(.hovering).horizontal slider {
+  margin: 0 2px;
+  min-width: 40px;
+}
+
+scrollbar.overlay-indicator:not(.dragging):not(.hovering).horizontal button {
+  margin: 1px 2px;
+  min-width: 5px;
+}
+
+scrollbar.overlay-indicator:not(.dragging):not(.hovering).vertical slider {
+  margin: 2px 0;
+  min-height: 40px;
+}
+
+scrollbar.overlay-indicator:not(.dragging):not(.hovering).vertical button {
+  margin: 2px 1px;
+  min-height: 5px;
+}
+
+scrollbar.overlay-indicator.dragging, scrollbar.overlay-indicator.hovering {
+  opacity: 0.8;
+}
+
+scrollbar.horizontal slider {
+  min-width: 40px;
+}
+
+scrollbar.vertical slider {
+  min-height: 40px;
+}
+
+scrollbar button {
+  padding: 0;
+  min-width: 12px;
+  min-height: 12px;
+  border-style: none;
+  border-radius: 0;
+  transition-property: min-height, min-width, color;
+  border-color: transparent;
+  background-color: transparent;
+  background-image: none;
+  box-shadow: inset 0 1px alpha({{colors.surface.default.hex}}, 0);
+  text-shadow: none;
+  -gtk-icon-shadow: none;
+  color: alpha({{colors.on_surface_variant.default.hex}}, 0.5);
+}
+
+scrollbar button:hover {
+  border-color: transparent;
+  background-color: transparent;
+  background-image: none;
+  box-shadow: inset 0 1px alpha({{colors.surface.default.hex}}, 0);
+  text-shadow: none;
+  -gtk-icon-shadow: none;
+  color: alpha({{colors.on_surface_variant.default.hex}}, 0.7);
+}
+
+scrollbar button:active, scrollbar button:checked {
+  border-color: transparent;
+  background-color: transparent;
+  background-image: none;
+  box-shadow: inset 0 1px alpha({{colors.surface.default.hex}}, 0);
+  text-shadow: none;
+  -gtk-icon-shadow: none;
+  color: {{colors.on_surface_variant.default.hex}};
+}
+
+scrollbar button:disabled {
+  border-color: transparent;
+  background-color: transparent;
+  background-image: none;
+  box-shadow: inset 0 1px alpha({{colors.surface.default.hex}}, 0);
+  text-shadow: none;
+  -gtk-icon-shadow: none;
+  color: alpha({{colors.on_surface.default.hex}}, 0.3);
+}
+
+scrollbar button:backdrop {
+  border-color: transparent;
+  background-color: transparent;
+  background-image: none;
+  box-shadow: inset 0 1px alpha({{colors.surface.default.hex}}, 0);
+  text-shadow: none;
+  -gtk-icon-shadow: none;
+  color: alpha({{colors.on_surface_variant.default.hex}}, 0.4);
+}
+
+scrollbar button:backdrop:disabled {
+  border-color: transparent;
+  background-color: transparent;
+  background-image: none;
+  box-shadow: inset 0 1px alpha({{colors.surface.default.hex}}, 0);
+  text-shadow: none;
+  -gtk-icon-shadow: none;
+  color: alpha({{colors.on_surface.default.hex}}, 0.3);
+}
+
+scrollbar.vertical button.down {
+  -gtk-icon-source: -gtk-icontheme("pan-down-symbolic");
+}
+
+scrollbar.vertical button.up {
+  -gtk-icon-source: -gtk-icontheme("pan-up-symbolic");
+}
+
+scrollbar.horizontal button.down {
+  -gtk-icon-source: -gtk-icontheme("pan-end-symbolic");
+}
+
+scrollbar.horizontal button.up {
+  -gtk-icon-source: -gtk-icontheme("pan-start-symbolic");
+}
+
+/***********
+ * Buttons *
+ ***********/
+@keyframes needs_attention {
+  from {
+    background-image: -gtk-gradient(radial, center center, 0, center center, 0.01, to({{colors.primary.default.hex}}), to(transparent));
+  }
+  to {
+    background-image: -gtk-gradient(radial, center center, 0, center center, 0.5, to({{colors.primary.default.hex}}), to(transparent));
+  }
+}
+
+button {
+  min-height: 24px;
+  min-width: 16px;
+  padding: 8px 16px;
+  border: 1px solid;
+  border-radius: 6px;
+  transition: all 200ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  border-color: alpha({{colors.outline.default.hex}}, 0.5);
+  background-color: {{colors.surface.default.hex}};
+  color: {{colors.on_surface.default.hex}};
+  text-shadow: none;
+  -gtk-icon-shadow: none;
+  box-shadow: none;
+}
+
+button:hover {
+  border-color: alpha({{colors.outline.default.hex}}, 0.5);
+  background-color: alpha({{colors.on_surface.default.hex}}, 0.08);
+  color: {{colors.on_surface.default.hex}};
+}
+
+button:active, button:checked {
+  border-color: alpha({{colors.outline.default.hex}}, 0.5);
+  background-color: alpha({{colors.on_surface.default.hex}}, 0.12);
+  color: {{colors.on_surface.default.hex}};
+  box-shadow: none;
+  transition-duration: 50ms;
+}
+
+button:backdrop {
+  border-color: alpha({{colors.outline.default.hex}}, 0.3);
+  background-color: {{colors.surface_dim.default.hex}};
+  color: {{colors.on_surface_variant.default.hex}};
+  text-shadow: none;
+  -gtk-icon-shadow: none;
+}
+
+button:backdrop:active, button:backdrop:checked {
+  border-color: alpha({{colors.outline.default.hex}}, 0.3);
+  background-color: alpha({{colors.on_surface_variant.default.hex}}, 0.08);
+  color: {{colors.on_surface_variant.default.hex}};
+}
+
+button:backdrop:disabled {
+  border-color: alpha({{colors.outline.default.hex}}, 0.12);
+  background-color: alpha({{colors.on_surface.default.hex}}, 0.04);
+  color: alpha({{colors.on_surface.default.hex}}, 0.38);
+  text-shadow: none;
+  -gtk-icon-shadow: none;
+}
+
+button:backdrop:disabled:active, button:backdrop:disabled:checked {
+  border-color: alpha({{colors.outline.default.hex}}, 0.12);
+  background-color: alpha({{colors.on_surface.default.hex}}, 0.04);
+  color: alpha({{colors.on_surface.default.hex}}, 0.38);
+}
+
+button:disabled {
+  border-color: alpha({{colors.outline.default.hex}}, 0.12);
+  background-color: alpha({{colors.on_surface.default.hex}}, 0.04);
+  color: alpha({{colors.on_surface.default.hex}}, 0.38);
+  text-shadow: none;
+  -gtk-icon-shadow: none;
+}
+
+button:disabled:active, button:disabled:checked {
+  border-color: alpha({{colors.outline.default.hex}}, 0.12);
+  background-color: alpha({{colors.on_surface.default.hex}}, 0.04);
+  color: alpha({{colors.on_surface.default.hex}}, 0.38);
+  box-shadow: none;
+}
+
+button.suggested-action {
+  border-color: {{colors.primary.default.hex}};
+  background-color: {{colors.primary.default.hex}};
+  color: {{colors.on_primary.default.hex}};
+}
+
+button.suggested-action.flat {
+  border-color: transparent;
+  background-color: transparent;
+  background-image: none;
+  color: {{colors.primary.default.hex}};
+}
+
+button.suggested-action:hover {
+  border-color: {{colors.primary.default.hex}};
+  background-color: alpha({{colors.on_primary.default.hex}}, 0.08);
+  color: {{colors.on_primary.default.hex}};
+}
+
+button.suggested-action:active, button.suggested-action:checked {
+  border-color: {{colors.primary.default.hex}};
+  background-color: alpha({{colors.on_primary.default.hex}}, 0.12);
+  color: {{colors.on_primary.default.hex}};
+}
+
+button.suggested-action:backdrop {
+  border-color: {{colors.primary.default.hex}};
+  background-color: {{colors.primary.default.hex}};
+  color: {{colors.on_primary.default.hex}};
+}
+
+button.suggested-action:backdrop:disabled {
+  border-color: alpha({{colors.outline.default.hex}}, 0.12);
+  background-color: alpha({{colors.on_surface.default.hex}}, 0.04);
+  color: alpha({{colors.on_surface.default.hex}}, 0.38);
+}
+
+button.suggested-action:disabled {
+  border-color: alpha({{colors.outline.default.hex}}, 0.12);
+  background-color: alpha({{colors.on_surface.default.hex}}, 0.04);
+  color: alpha({{colors.on_surface.default.hex}}, 0.38);
+}
+
+button.destructive-action {
+  border-color: {{colors.error.default.hex}};
+  background-color: {{colors.error.default.hex}};
+  color: {{colors.on_error.default.hex}};
+}
+
+button.destructive-action.flat {
+  border-color: transparent;
+  background-color: transparent;
+  background-image: none;
+  color: {{colors.error.default.hex}};
+}
+
+button.destructive-action:hover {
+  border-color: {{colors.error.default.hex}};
+  background-color: alpha({{colors.on_error.default.hex}}, 0.08);
+  color: {{colors.on_error.default.hex}};
+}
+
+button.destructive-action:active, button.destructive-action:checked {
+  border-color: {{colors.error.default.hex}};
+  background-color: alpha({{colors.on_error.default.hex}}, 0.12);
+  color: {{colors.on_error.default.hex}};
+}
+
+button.destructive-action:backdrop {
+  border-color: {{colors.error.default.hex}};
+  background-color: {{colors.error.default.hex}};
+  color: {{colors.on_error.default.hex}};
+}
+
+button.destructive-action:backdrop:disabled {
+  border-color: alpha({{colors.outline.default.hex}}, 0.12);
+  background-color: alpha({{colors.on_surface.default.hex}}, 0.04);
+  color: alpha({{colors.on_surface.default.hex}}, 0.38);
+}
+
+button.destructive-action:disabled {
+  border-color: alpha({{colors.outline.default.hex}}, 0.12);
+  background-color: alpha({{colors.on_surface.default.hex}}, 0.04);
+  color: alpha({{colors.on_surface.default.hex}}, 0.38);
+}
+
+button.flat {
+  border-color: transparent;
+  background-color: transparent;
+  background-image: none;
+  box-shadow: inset 0 1px alpha({{colors.surface.default.hex}}, 0);
+  text-shadow: none;
+  -gtk-icon-shadow: none;
+  transition: none;
+}
+
+button.flat:hover {
+  transition: all 200ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transition-duration: 500ms;
+  border-color: transparent;
+  background-color: alpha({{colors.on_surface.default.hex}}, 0.08);
+  background-image: none;
+}
+
+button.flat:hover:active {
+  transition: all 200ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+button.flat:backdrop {
+  border-color: transparent;
+  background-color: transparent;
+  background-image: none;
+  box-shadow: inset 0 1px alpha({{colors.surface.default.hex}}, 0);
+  text-shadow: none;
+  -gtk-icon-shadow: none;
+  color: {{colors.on_surface_variant.default.hex}};
+}
+
+button.flat:disabled {
+  border-color: transparent;
+  background-color: transparent;
+  background-image: none;
+  box-shadow: inset 0 1px alpha({{colors.surface.default.hex}}, 0);
+  text-shadow: none;
+  -gtk-icon-shadow: none;
+  color: alpha({{colors.on_surface.default.hex}}, 0.38);
+}
+
+button.flat:backdrop:disabled {
+  border-color: transparent;
+  background-color: transparent;
+  background-image: none;
+  box-shadow: inset 0 1px alpha({{colors.surface.default.hex}}, 0);
+  text-shadow: none;
+  -gtk-icon-shadow: none;
+  color: alpha({{colors.on_surface.default.hex}}, 0.38);
+}
+
+button.flat:active, button.flat:checked {
+  transition: all 200ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  border-color: transparent;
+  background-color: alpha({{colors.on_surface.default.hex}}, 0.12);
+  background-image: none;
+  box-shadow: inset 0 1px alpha({{colors.surface.default.hex}}, 0);
+  text-shadow: none;
+  -gtk-icon-shadow: none;
+}
+
+button.flat:backdrop:active, button.flat:backdrop:checked {
+  border-color: transparent;
+  background-color: alpha({{colors.on_surface_variant.default.hex}}, 0.08);
+  background-image: none;
+  box-shadow: inset 0 1px alpha({{colors.surface.default.hex}}, 0);
+  text-shadow: none;
+  -gtk-icon-shadow: none;
+  color: {{colors.on_surface_variant.default.hex}};
+}
+
+button.flat:disabled:active, button.flat:disabled:checked {
+  border-color: transparent;
+  background-color: alpha({{colors.on_surface.default.hex}}, 0.04);
+  background-image: none;
+  box-shadow: inset 0 1px alpha({{colors.surface.default.hex}}, 0);
+  text-shadow: none;
+  -gtk-icon-shadow: none;
+  color: alpha({{colors.on_surface.default.hex}}, 0.38);
+}
+
+button.flat.suggested-action {
+  color: {{colors.primary.default.hex}};
+}
+
+button.flat.suggested-action:hover {
+  border-color: transparent;
+  background-color: alpha({{colors.primary.default.hex}}, 0.08);
+  background-image: none;
+  color: {{colors.primary.default.hex}};
+}
+
+button.flat.suggested-action:active, button.flat.suggested-action:checked {
+  border-color: transparent;
+  background-color: alpha({{colors.primary.default.hex}}, 0.12);
+  background-image: none;
+  color: {{colors.primary.default.hex}};
+}
+
+button.flat.suggested-action:backdrop {
+  color: {{colors.primary.default.hex}};
+}
+
+button.flat.suggested-action:disabled, button.flat.suggested-action:backdrop:disabled {
+  color: alpha({{colors.on_surface.default.hex}}, 0.38);
+}
+
+button.flat.destructive-action {
+  color: {{colors.error.default.hex}};
+}
+
+button.flat.destructive-action:hover {
+  border-color: transparent;
+  background-color: alpha({{colors.error.default.hex}}, 0.08);
+  background-image: none;
+  color: {{colors.error.default.hex}};
+}
+
+button.flat.destructive-action:active, button.flat.destructive-action:checked {
+  border-color: transparent;
+  background-color: alpha({{colors.error.default.hex}}, 0.12);
+  background-image: none;
+  color: {{colors.error.default.hex}};
+}
+
+button.flat.destructive-action:backdrop {
+  color: {{colors.error.default.hex}};
+}
+
+button.flat.destructive-action:disabled, button.flat.destructive-action:backdrop:disabled {
+  color: alpha({{colors.on_surface.default.hex}}, 0.38);
+}
+
+button.image-button {
+  min-width: 24px;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+button.text-button {
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+button.text-button.image-button {
+  padding-left: 12px;
+  padding-right: 16px;
+}
+
+button.text-button.image-button label {
+  padding-left: 8px;
+  padding-right: 0px;
+}
+
+button.text-button.image-button label:dir(rtl) {
+  padding-left: 0px;
+  padding-right: 8px;
+}
+
+menubutton.circular button, button.circular {
+  border-radius: 9999px;
+  -gtk-outline-radius: 9999px;
+}
+
+menubutton.circular button label, button.circular label {
+  padding: 0;
+}
+
+button:drop(active) {
+  border-color: {{colors.primary.default.hex}};
+  box-shadow: inset 0 0 0 1px {{colors.primary.default.hex}};
+}
+
+/***************
+ * Header bars *
+ ***************/
+.nemo-window .primary-toolbar button:not(.text-button), headerbar button:not(.suggested-action):not(.destructive-action) {
+  color: {{colors.on_surface_variant.default.hex}};
+}
+
+.nemo-window .primary-toolbar .linked:not(.vertical) > button:not(.text-button), headerbar .linked:not(.vertical) > button:not(.suggested-action):not(.destructive-action) {
+  border-radius: 6px;
+}
+
+.nemo-window .primary-toolbar button:focus:not(.text-button), headerbar button:focus:not(.suggested-action):not(.destructive-action), .nemo-window .primary-toolbar button:hover:not(.text-button), headerbar button:hover:not(.suggested-action):not(.destructive-action), .nemo-window .primary-toolbar button:active:not(.text-button), headerbar button:active:not(.suggested-action):not(.destructive-action), .nemo-window .primary-toolbar button:checked:not(.text-button), headerbar button:checked:not(.suggested-action):not(.destructive-action) {
+  color: {{colors.on_surface.default.hex}};
+}
+
+.nemo-window .primary-toolbar button:disabled:not(.text-button), headerbar button:disabled:not(.suggested-action):not(.destructive-action) {
+  color: alpha({{colors.on_surface.default.hex}}, 0.3);
+}
+
+.nemo-window .primary-toolbar button:checked:disabled:not(.text-button), headerbar button:checked:disabled:not(.suggested-action):not(.destructive-action) {
+  background-color: transparent;
+  color: alpha({{colors.on_surface.default.hex}}, 0.38);
+}
+
+.nemo-window .primary-toolbar button:backdrop:not(.text-button), headerbar button:backdrop:not(.suggested-action):not(.destructive-action) {
+  color: alpha({{colors.on_surface.default.hex}}, 0.38);
+}
+
+.nemo-window .primary-toolbar button:backdrop:focus:not(.text-button), headerbar button:backdrop:focus:not(.suggested-action):not(.destructive-action), .nemo-window .primary-toolbar button:backdrop:hover:not(.text-button), headerbar button:backdrop:hover:not(.suggested-action):not(.destructive-action), .nemo-window .primary-toolbar button:backdrop:active:not(.text-button), headerbar button:backdrop:active:not(.suggested-action):not(.destructive-action) {
+  color: {{colors.on_surface_variant.default.hex}};
+}
+
+.nemo-window .primary-toolbar button:backdrop:disabled:not(.text-button), headerbar button:backdrop:disabled:not(.suggested-action):not(.destructive-action) {
+  color: alpha({{colors.on_surface.default.hex}}, 0.3);
+}
+
+.nemo-window .primary-toolbar button:backdrop:checked:not(.text-button), headerbar button:backdrop:checked:not(.suggested-action):not(.destructive-action) {
+  color: {{colors.on_surface_variant.default.hex}};
+}
+
+.nemo-window .primary-toolbar button:backdrop:checked:disabled:not(.text-button), headerbar button:backdrop:checked:disabled:not(.suggested-action):not(.destructive-action) {
+  color: alpha({{colors.on_surface.default.hex}}, 0.3);
+}
+
+.nemo-window .primary-toolbar entry, .titlebar entry {
+  background-color: alpha({{colors.on_surface.default.hex}}, 0.04);
+  color: {{colors.on_surface.default.hex}};
+}
+
+.nemo-window .primary-toolbar entry:disabled, .titlebar entry:disabled {
+  background-color: alpha({{colors.on_surface.default.hex}}, 0.04);
+  color: alpha({{colors.on_surface.default.hex}}, 0.38);
+}
+
+.nemo-window .primary-toolbar entry image, .titlebar entry image {
+  color: {{colors.on_surface_variant.default.hex}};
+}
+
+.nemo-window .primary-toolbar entry image:hover, .titlebar entry image:hover, .nemo-window .primary-toolbar entry image:active, .titlebar entry image:active {
+  color: {{colors.on_surface.default.hex}};
+}
+
+.nemo-window .primary-toolbar entry image:disabled, .titlebar entry image:disabled {
+  color: alpha({{colors.on_surface.default.hex}}, 0.38);
+}
+
+.titlebar {
+  transition: all 75ms cubic-bezier(0, 0, 0.2, 1);
+  background-color: {{colors.surface_container_low.default.hex}};
+  color: {{colors.on_surface.default.hex}};
+  border-radius: 12px 12px 0 0;
+  box-shadow: inset 0 -1px alpha({{colors.outline.default.hex}}, 0.12), inset 0 1px alpha({{colors.surface_bright.default.hex}}, 0.15);
+}
+
+.titlebar:disabled {
+  color: alpha({{colors.on_surface.default.hex}}, 0.38);
+}
+
+.titlebar:backdrop {
+  color: {{colors.on_surface_variant.default.hex}};
+}
+
+.titlebar:backdrop:disabled {
+  color: alpha({{colors.on_surface.default.hex}}, 0.3);
+}
+
+.csd .titlebar:backdrop {
+  background-color: {{colors.surface_container_lowest.default.hex}};
+}
+
+.titlebar .title {
+  padding: 0 12px;
+  font-weight: bold;
+}
+
+.titlebar .subtitle {
+  padding: 0 12px;
+  font-size: smaller;
+}
+
+.titlebar .subtitle,
+.titlebar .dim-label {
+  transition: color 75ms cubic-bezier(0, 0, 0.2, 1);
+  color: {{colors.on_surface_variant.default.hex}};
+}
+
+.titlebar .subtitle:backdrop,
+.titlebar .dim-label:backdrop {
+  color: alpha({{colors.on_surface.default.hex}}, 0.38);
+}
+
+.titlebar .titlebar {
+  background-color: transparent;
+  box-shadow: none;
+}
+
+.titlebar + separator, .titlebar + separator.sidebar {
+  background-color: {{colors.surface_container_low.default.hex}};
+  background-image: none;
+  transition: all 75ms cubic-bezier(0, 0, 0.2, 1);
+  box-shadow: inset 0 -1px alpha({{colors.outline.default.hex}}, 0.12), inset 0 1px alpha({{colors.surface_bright.default.hex}}, 0.15);
+}
+
+.titlebar + separator:backdrop, .titlebar + separator.sidebar:backdrop {
+  background-color: {{colors.surface_container_lowest.default.hex}};
+}
+
+.titlebar.selection-mode + separator, .titlebar.selection-mode + separator.sidebar, .selection-mode .titlebar + separator, .selection-mode .titlebar + separator.sidebar {
+  background-color: {{colors.primary.default.hex}};
+}
+
+.titlebar.selection-mode + separator:backdrop, .titlebar.selection-mode + separator.sidebar:backdrop, .selection-mode .titlebar + separator:backdrop, .selection-mode .titlebar + separator.sidebar:backdrop {
+  background-color: {{colors.primary.default.hex}};
+}
+
+.background.csd.unified .titlebar + separator, .background.csd.unified .titlebar + separator.sidebar {
+  box-shadow: inset 0 -1px alpha({{colors.outline.default.hex}}, 0.12);
+}
+
+.titlebar .linked:not(.vertical) > entry {
+  border-radius: 6px;
+  margin-left: 3px;
+  margin-right: 3px;
+}
+
+.titlebar button.suggested-action:disabled, .titlebar button.destructive-action:disabled {
+  background-color: alpha({{colors.on_surface.default.hex}}, 0.04);
+  color: alpha({{colors.on_surface.default.hex}}, 0.38);
+}
+
+.titlebar .path-bar button:not(.suggested-action):not(.destructive-action).text-button {
+  min-width: 0;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+.titlebar.selection-mode {
+  transition: background-color 0.1ms 225ms, color 75ms cubic-bezier(0, 0, 0.2, 1);
+  animation: ripple-on-headerbar 225ms cubic-bezier(0, 0, 0.2, 1);
+  background-color: {{colors.primary.default.hex}};
+  color: {{colors.on_primary.default.hex}};
+  box-shadow: inset 0 -1px alpha({{colors.outline.default.hex}}, 0.12), inset 0 1px alpha({{colors.surface_bright.default.hex}}, 0.2);
+}
+
+.titlebar.selection-mode:backdrop {
+  color: alpha({{colors.on_primary.default.hex}}, 0.7);
+  background-color: {{colors.primary.default.hex}};
+}
+
+.titlebar.selection-mode .subtitle:link {
+  color: {{colors.on_primary.default.hex}};
+}
+
+.titlebar.selection-mode button:not(.suggested-action):not(.destructive-action) {
+  color: {{colors.on_primary.default.hex}};
+}
+
+.titlebar.selection-mode button:not(.suggested-action):not(.destructive-action):disabled {
+  color: alpha({{colors.on_primary.default.hex}}, 0.5);
+}
+
+.titlebar.selection-mode button:not(.suggested-action):not(.destructive-action):checked {
+  color: {{colors.on_primary.default.hex}};
+}
+
+.titlebar.selection-mode button:not(.suggested-action):not(.destructive-action):checked:disabled {
+  color: alpha({{colors.on_primary.default.hex}}, 0.5);
+}
+
+.titlebar.selection-mode button:not(.suggested-action):not(.destructive-action):backdrop:not(.titlebutton) {
+  color: alpha({{colors.on_primary.default.hex}}, 0.7);
+}
+
+.titlebar.selection-mode button:not(.suggested-action):not(.destructive-action):backdrop:disabled {
+  color: alpha({{colors.on_primary.default.hex}}, 0.32);
+}
+
+.titlebar.selection-mode button:not(.suggested-action):not(.destructive-action):backdrop:checked {
+  color: alpha({{colors.on_primary.default.hex}}, 0.7);
+}
+
+.titlebar.selection-mode button:not(.suggested-action):not(.destructive-action):backdrop:checked:disabled {
+  color: alpha({{colors.on_primary.default.hex}}, 0.32);
+}
+
+.titlebar.selection-mode .selection-menu {
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+.titlebar.selection-mode .selection-menu arrow {
+  -GtkArrow-arrow-scaling: 1;
+}
+
+.titlebar.selection-mode .selection-menu .arrow {
+  -gtk-icon-source: -gtk-icontheme("pan-down-symbolic");
+}
+
+.tiled .titlebar, .tiled-top .titlebar, .tiled-right .titlebar, .tiled-bottom .titlebar, .tiled-left .titlebar, .maximized .titlebar, .fullscreen .titlebar {
+  border-radius: 0;
+}
+
+.titlebar.default-decoration {
+  min-height: 24px;
+  padding: 6px 12px;
+  border-radius: 12px 12px 0 0;
+  border: none;
+  background-color: {{colors.surface_container_low.default.hex}};
+  background-image: none;
+  box-shadow: inset 0 1px alpha({{colors.surface_bright.default.hex}}, 0.15);
+}
+
+.titlebar.default-decoration:backdrop {
+  background-color: {{colors.surface_container_lowest.default.hex}};
+}
+
+.tiled .titlebar.default-decoration, .maximized .titlebar.default-decoration, .fullscreen .titlebar.default-decoration {
+  box-shadow: none;
+  border-radius: 0;
+}
+
+.titlebar.default-decoration button.titlebutton {
+  min-height: 24px;
+  min-width: 24px;
+  margin: 0;
+  padding: 0;
+}
+
+.background.csd .titlebar.default-decoration {
+  padding: 6px;
+  box-shadow: none;
+}
+
+.background:not(.csd) .titlebar.default-decoration button.titlebutton:active {
+  background-size: 1000% 1000%;
+}
+
+.solid-csd .titlebar:dir(rtl), .solid-csd .titlebar:dir(ltr) {
+  border-radius: 0;
+  box-shadow: none;
+}
+
+headerbar {
+  min-height: 46px;
+  padding: 0 6px;
+}
+
+box.vertical headerbar {
+  background-color: {{colors.surface_container_low.default.hex}};
+}
+
+headerbar entry,
+headerbar spinbutton,
+headerbar button,
+headerbar stackswitcher {
+  margin-top: 6px;
+  margin-bottom: 6px;
+}
+
+headerbar button, headerbar button.image-button {
+  border-radius: 6px;
+}
+
+headerbar > box.left,
+headerbar > box.right {
+  padding: 0 4px;
+}
+
+headerbar separator.titlebutton, headerbar separator.sidebar {
+  margin-top: 11.5px;
+  margin-bottom: 11.5px;
+  background-color: transparent;
+}
+
+headerbar switch {
+  margin-top: 11px;
+  margin-bottom: 11px;
+}
+
+headerbar spinbutton button {
+  margin-top: 0;
+  margin-bottom: 0;
+}

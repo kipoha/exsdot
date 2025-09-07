@@ -1,0 +1,10 @@
+layout {
+    border {
+        active-color   "{{colors.primary.default.hex}}"
+        inactive-color "{{colors.secondary.default.hex}}"
+    }
+    focus-ring {
+        active-color   "{{colors.inverse_primary.default.hex}}"
+    }
+    background-color "{{colors.background.default.hex}}"
+}
