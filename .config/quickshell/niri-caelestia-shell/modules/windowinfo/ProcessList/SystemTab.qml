@@ -22,7 +22,7 @@ ScrollView {
         width: parent.width
         spacing: Appearance.padding.smaller
 
-        Rectangle {
+        StyledRect {
             width: parent.width
             height: systemInfoColumn.implicitHeight + 2 * Appearance.padding.normal
             radius: Appearance.rounding.small
@@ -86,7 +86,7 @@ ScrollView {
                     }
                 }
 
-                Rectangle {
+                StyledRect {
                     width: parent.width
                     height: 1
                     color: Colours.palette.m3onSurfaceVariant
@@ -96,7 +96,7 @@ ScrollView {
                     width: parent.width
                     spacing: Appearance.padding.normal
 
-                    Rectangle {
+                    StyledRect {
                         width: (parent.width - Appearance.padding.normal) / 2
                         height: Math.max(hardwareColumn.implicitHeight, memoryColumn.implicitHeight) + Appearance.padding.smaller
                         radius: Appearance.rounding.small
@@ -168,7 +168,7 @@ ScrollView {
                         }
                     }
 
-                    Rectangle {
+                    StyledRect {
                         width: (parent.width - Appearance.padding.normal) / 2
                         height: Math.max(hardwareColumn.implicitHeight, memoryColumn.implicitHeight) + Appearance.padding.smaller
                         radius: Appearance.rounding.small
@@ -234,7 +234,7 @@ ScrollView {
             }
         }
 
-        Rectangle {
+        StyledRect {
             width: parent.width
             height: storageColumn.implicitHeight + 2 * Appearance.padding.normal
             radius: Appearance.rounding.small
@@ -351,7 +351,7 @@ ScrollView {
 
                         model: SysMonitorService.diskMounts
 
-                        Rectangle {
+                        StyledRect {
                             id: individualDiskMount
                             required property var modelData
 

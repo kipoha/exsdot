@@ -46,7 +46,7 @@ Item {
             Layout.fillWidth: true
         }
 
-        Rectangle {
+        StyledRect {
             Layout.fillWidth: true
             Layout.fillHeight: true
             radius: Appearance.rounding.normal

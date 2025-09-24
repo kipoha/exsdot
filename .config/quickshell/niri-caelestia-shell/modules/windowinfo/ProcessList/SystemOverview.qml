@@ -15,7 +15,7 @@ Row {
         SysMonitorService.removeRef();
     }
 
-    Rectangle {
+    StyledRect {
         width: (parent.width - Appearance.padding.normal * 2) / 3
         height: 80
         radius: Appearance.rounding.small
@@ -81,7 +81,7 @@ Row {
         }
     }
 
-    Rectangle {
+    StyledRect {
         width: (parent.width - Appearance.padding.normal * 2) / 3
         height: 80
         radius: Appearance.rounding.small
@@ -147,7 +147,7 @@ Row {
         }
     }
 
-    Rectangle {
+    StyledRect {
         width: (parent.width - Appearance.padding.normal * 2) / 3
         height: 80
         radius: Appearance.rounding.small

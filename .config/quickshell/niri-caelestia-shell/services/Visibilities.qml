@@ -1,22 +1,17 @@
 pragma Singleton
 
+import qs.services
 import Quickshell
 
 Singleton {
-    property var screens: ({})
+    property var screens: new Map()
+    property var bars: new Map()
+
+    function load(screen: ShellScreen, visibilities: var): void {
+        screens.set(Niri.focusedMonitorName, visibilities);
+    }
 
     function getForActive(): PersistentProperties {
-        console.log("SCREENS JSON:", JSON.stringify(screens))
-        var testScreens = Quickshell.screens;
-        console.log("TEST SCREENS JSON:", JSON.stringify(testScreens))
-        for (var [key, value] of Object.entries(screens)) {
-            if (value.primary || value.active) {
-                return value;
-            }
-        }
-
-        var first = Object.entries(screens)[0];
-        return first ? first[1] : null;
+        return Object.entries(screens).find(s => s[0].slice(s[0].indexOf('"') + 1, s[0].lastIndexOf('"')) === Niri.focusedMonitorName)[1];
     }
 }
-

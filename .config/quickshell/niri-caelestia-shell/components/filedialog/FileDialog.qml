@@ -1,7 +1,7 @@
 pragma ComponentBehavior: Bound
 
+import qs.components
 import qs.services
-import qs.config
 import Quickshell
 import QtQuick
 import QtQuick.Layouts
@@ -36,8 +36,8 @@ LazyLoader {
         property list<string> filters: loader.filters
 
         readonly property bool selectionValid: {
-            const item = folderContents.currentItem;
-            return item && !item.fileIsDir && (filters.includes("*") || filters.includes(item.fileSuffix));
+            const file = folderContents.currentItem?.modelData;
+            return (file && !file.isDir && (filters.includes("*") || filters.includes(file.suffix))) ?? false;
         }
 
         function accepted(path: string): void {
@@ -96,11 +96,7 @@ LazyLoader {
         }
 
         Behavior on color {
-            ColorAnimation {
-                duration: Appearance.anim.durations.normal
-                easing.type: Easing.BezierSpline
-                easing.bezierCurve: Appearance.anim.curves.standard
-            }
+            CAnim {}
         }
     }
 }

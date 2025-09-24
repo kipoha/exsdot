@@ -4,11 +4,16 @@ self: {
   lib,
   ...
 }: let
-  cli-default = self.inputs.caelestia-cli.packages.${pkgs.system}.default;
-  shell-default = self.packages.${pkgs.system}.with-cli;
+  inherit (pkgs.stdenv.hostPlatform) system;
+
+  cli-default = self.inputs.caelestia-cli.packages.${system}.default;
+  shell-default = self.packages.${system}.with-cli;
 
   cfg = config.programs.caelestia;
 in {
+  imports = [
+    (lib.mkRenamedOptionModule ["programs" "caelestia" "environment"] ["programs" "caelestia" "systemd" "environment"])
+  ];
   options = with lib; {
     programs.caelestia = {
       enable = mkEnableOption "Enable Caelestia shell";
@@ -17,8 +22,30 @@ in {
         default = shell-default;
         description = "The package of Caelestia shell";
       };
+      systemd = {
+        enable = mkOption {
+          type = types.bool;
+          default = true;
+          description = "Enable the systemd service for Caelestia shell";
+        };
+        target = mkOption {
+          type = types.str;
+          description = ''
+            The systemd target that will automatically start the Caelestia shell.
+          '';
+          default = config.wayland.systemd.target;
+        };
+        environment = mkOption {
+          type = types.listOf types.str;
+          description = "Extra Environment variables to pass to the Caelestia shell systemd service.";
+          default = [];
+          example = [
+            "QT_QPA_PLATFORMTHEME=gtk3"
+          ];
+        };
+      };
       settings = mkOption {
-        type = types.attrs;
+        type = types.attrsOf types.anything;
         default = {};
         description = "Caelestia shell settings";
       };
@@ -34,20 +61,33 @@ in {
           default = cli-default;
           description = "The package of Caelestia CLI"; # Doesn't override the shell's CLI, only change from home.packages
         };
+        settings = mkOption {
+          type = types.attrsOf types.anything;
+          default = {};
+          description = "Caelestia CLI settings";
+        };
+        extraConfig = mkOption {
+          type = types.str;
+          default = "{}";
+          description = "Caelestia CLI extra configs written to cli.json";
+        };
       };
     };
   };
 
   config = let
-    cli = cfg.cli.package or cli-default;
-    shell = cfg.package or shell-default;
+    cli = cfg.cli.package;
+    shell = cfg.package;
   in
     lib.mkIf cfg.enable {
-      systemd.user.services.caelestia = {
+      systemd.user.services.caelestia = lib.mkIf cfg.systemd.enable {
         Unit = {
           Description = "Caelestia Shell Service";
-          After = ["graphical-session.target"];
-          PartOf = ["graphical-session.target"];
+          After = [cfg.systemd.target];
+          PartOf = [cfg.systemd.target];
+          X-Restart-Triggers = lib.mkIf (cfg.settings != {}) [
+            "${config.xdg.configFile."caelestia/shell.json".source}"
+          ];
         };
 
         Service = {
@@ -56,26 +96,35 @@ in {
           Restart = "on-failure";
           RestartSec = "5s";
           TimeoutStopSec = "5s";
-          Environment = [
-            "QT_QPA_PLATFORM=wayland"
-          ];
+          Environment =
+            [
+              "QT_QPA_PLATFORM=wayland"
+            ]
+            ++ cfg.systemd.environment;
 
           Slice = "session.slice";
         };
 
         Install = {
-          WantedBy = ["graphical-session.target"];
+          WantedBy = [cfg.systemd.target];
         };
       };
 
-      xdg.configFile."caelestia/shell.json".text = let
-        extraConfig =
-          if cfg.extraConfig != ""
-          then cfg.extraConfig
-          else "{}";
-      in
-        builtins.toJSON (lib.recursiveUpdate
-          (cfg.settings or {}) (builtins.fromJSON extraConfig));
+      xdg.configFile = let
+        mkConfig = c:
+          lib.pipe (
+            if c.extraConfig != ""
+            then c.extraConfig
+            else "{}"
+          ) [
+            builtins.fromJSON
+            (lib.recursiveUpdate c.settings)
+            builtins.toJSON
+          ];
+      in {
+        "caelestia/shell.json".text = mkConfig cfg;
+        "caelestia/cli.json".text = mkConfig cfg.cli;
+      };
 
       home.packages = [shell] ++ lib.optional cfg.cli.enable cli;
     };

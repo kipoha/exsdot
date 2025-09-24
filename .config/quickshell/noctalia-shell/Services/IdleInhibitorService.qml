@@ -131,8 +131,7 @@ Singleton {
 
   // Systemd inhibition using systemd-inhibit
   function startSystemdInhibition() {
-    inhibitorProcess.command = ["systemd-inhibit", "--what=idle:sleep:handle-lid-switch", "--why="
-                                + reason, "--mode=block", "sleep", "infinity"]
+    inhibitorProcess.command = ["systemd-inhibit", "--what=idle:sleep:handle-lid-switch", "--why=" + reason, "--mode=block", "sleep", "infinity"]
     inhibitorProcess.running = true
   }
 
@@ -164,13 +163,13 @@ Singleton {
     if (activeInhibitors.includes("manual")) {
       removeInhibitor("manual")
       Settings.data.ui.idleInhibitorEnabled = false
-      ToastService.showNotice("Keep Awake", "Disabled", false, 3000)
+      ToastService.showNotice("Keep awake", "Disabled")
       Logger.log("IdleInhibitor", "Manual inhibition disabled and saved to settings")
       return false
     } else {
       addInhibitor("manual", "Manually activated by user")
       Settings.data.ui.idleInhibitorEnabled = true
-      ToastService.showNotice("Keep Awake", "Enabled", false, 3000)
+      ToastService.showNotice("Keep awake", "Enabled")
       Logger.log("IdleInhibitor", "Manual inhibition enabled and saved to settings")
       return true
     }

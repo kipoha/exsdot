@@ -95,7 +95,7 @@ RowLayout {
 
       NIcon {
         anchors.centerIn: parent
-        text: "remove"
+        icon: "chevron-left"
         font.pointSize: Style.fontSizeS * scaling
         color: decreaseArea.containsMouse ? Color.mOnPrimary : Color.mPrimary
       }
@@ -130,7 +130,7 @@ RowLayout {
 
       NIcon {
         anchors.centerIn: parent
-        text: "add"
+        icon: "chevron-right"
         font.pointSize: Style.fontSizeS * scaling
         color: increaseArea.containsMouse ? Color.mOnPrimary : Color.mPrimary
       }
@@ -173,6 +173,7 @@ RowLayout {
         NText {
           anchors.centerIn: parent
           text: root.prefix + spinBox.value + root.suffix
+          font.family: Settings.data.ui.fontFixed
           font.pointSize: Style.fontSizeM * scaling
           font.weight: Style.fontWeightMedium
           color: Color.mOnSurface

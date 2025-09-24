@@ -1,3 +1,4 @@
+import qs.components
 import qs.services
 import qs.config
 import Quickshell
@@ -7,7 +8,7 @@ Item {
     id: root
 
     required property ShellScreen screen
-    required property bool visibility
+    required property var visibilities
 
     visible: width > 0
     implicitWidth: 0
@@ -15,7 +16,7 @@ Item {
 
     states: State {
         name: "visible"
-        when: root.visibility && Config.osd.enabled
+        when: root.visibilities.osd && Config.osd.enabled
 
         PropertyChanges {
             root.implicitWidth: content.implicitWidth
@@ -27,11 +28,9 @@ Item {
             from: ""
             to: "visible"
 
-            NumberAnimation {
+            Anim {
                 target: root
                 property: "implicitWidth"
-                duration: Appearance.anim.durations.normal
-                easing.type: Easing.BezierSpline
                 easing.bezierCurve: Appearance.anim.curves.expressiveDefaultSpatial
             }
         },
@@ -39,11 +38,9 @@ Item {
             from: "visible"
             to: ""
 
-            NumberAnimation {
+            Anim {
                 target: root
                 property: "implicitWidth"
-                duration: Appearance.anim.durations.normal
-                easing.type: Easing.BezierSpline
                 easing.bezierCurve: Appearance.anim.curves.emphasized
             }
         }
@@ -53,5 +50,6 @@ Item {
         id: content
 
         monitor: Brightness.getMonitorForScreen(root.screen)
+        visibilities: root.visibilities
     }
 }

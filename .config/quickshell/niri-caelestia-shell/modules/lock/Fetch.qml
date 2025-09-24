@@ -1,11 +1,10 @@
 pragma ComponentBehavior: Bound
 
 import qs.components
+import qs.components.effects
 import qs.services
 import qs.config
 import qs.utils
-import Quickshell
-import Quickshell.Widgets
 import Quickshell.Services.UPower
 import QtQuick
 import QtQuick.Layouts
@@ -48,16 +47,11 @@ ColumnLayout {
             elide: Text.ElideRight
         }
 
-        Loader {
+        WrappedLoader {
             Layout.fillHeight: true
-            asynchronous: true
             active: !iconLoader.active
-            visible: active
 
-            sourceComponent: IconImage {
-                source: Quickshell.iconPath(SysInfo.logo)
-                implicitSize: height
-            }
+            sourceComponent: OsLogo {}
         }
     }
 
@@ -66,19 +60,13 @@ ColumnLayout {
         Layout.fillHeight: false
         spacing: height * 0.15
 
-        Loader {
+        WrappedLoader {
             id: iconLoader
 
             Layout.fillHeight: true
-
-            asynchronous: true
             active: root.width > 320
-            visible: active
 
-            sourceComponent: IconImage {
-                source: Quickshell.iconPath(SysInfo.logo)
-                implicitSize: height
-            }
+            sourceComponent: OsLogo {}
         }
 
         ColumnLayout {
@@ -88,43 +76,42 @@ ColumnLayout {
             Layout.leftMargin: iconLoader.active ? 0 : width * 0.1
             spacing: Appearance.spacing.normal
 
-            Loader {
+            WrappedLoader {
                 Layout.fillWidth: true
-                asynchronous: true
                 active: !batLoader.active && root.height > 200
-                visible: active
 
                 sourceComponent: FetchText {
                     text: `OS  : ${SysInfo.osPrettyName || SysInfo.osName}`
                 }
             }
 
-            Loader {
+            WrappedLoader {
                 Layout.fillWidth: true
-                asynchronous: true
                 active: root.height > (batLoader.active ? 200 : 110)
-                visible: active
 
                 sourceComponent: FetchText {
                     text: `WM  : ${SysInfo.wm}`
                 }
             }
 
-            FetchText {
-                text: `USER: ${SysInfo.user}`
+            WrappedLoader {
+                Layout.fillWidth: true
+                active: !batLoader.active || root.height > 110
+
+                sourceComponent: FetchText {
+                    text: `USER: ${SysInfo.user}`
+                }
             }
 
             FetchText {
                 text: `UP  : ${SysInfo.uptime}`
             }
 
-            Loader {
+            WrappedLoader {
                 id: batLoader
 
                 Layout.fillWidth: true
-                asynchronous: true
                 active: UPower.displayDevice.isLaptopBattery
-                visible: active
 
                 sourceComponent: FetchText {
                     text: `BATT: ${UPower.onBattery ? "" : "(+) "}${Math.round(UPower.displayDevice.percentage * 100)}%`
@@ -133,12 +120,9 @@ ColumnLayout {
         }
     }
 
-    Loader {
+    WrappedLoader {
         Layout.alignment: Qt.AlignHCenter
-
-        asynchronous: true
         active: root.height > 180
-        visible: active
 
         sourceComponent: RowLayout {
             spacing: Appearance.spacing.large
@@ -156,6 +140,18 @@ ColumnLayout {
                 }
             }
         }
+    }
+
+    component WrappedLoader: Loader {
+        asynchronous: true
+        visible: active
+    }
+
+    component OsLogo: ColouredIcon {
+        source: SysInfo.osLogo
+        implicitSize: height
+        colour: Colours.palette.m3primary
+        layer.enabled: Config.lock.recolourLogo || SysInfo.isDefaultLogo
     }
 
     component FetchText: MonoText {

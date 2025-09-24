@@ -38,7 +38,7 @@ ColumnLayout {
     }
 
     // CPU Section
-    Rectangle {
+    StyledRect {
         Layout.alignment: Qt.AlignTop
         Layout.fillWidth: true
         Layout.fillHeight: true
@@ -141,7 +141,7 @@ ColumnLayout {
                                 implicitHeight: 20
                             }
 
-                            Rectangle {
+                            StyledRect {
                                 id: rectangul
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 6
@@ -150,7 +150,7 @@ ColumnLayout {
                                 color: Colours.palette.m3surfaceContainerLowest
                                 Layout.alignment: Qt.AlignVCenter
 
-                                Rectangle {
+                                StyledRect {
                                     width: parent.width * Math.min(1, individualCpuUsage.modelData / 100)
                                     height: parent.height
                                     radius: parent.radius
@@ -197,7 +197,7 @@ ColumnLayout {
         Repeater {
             model: SysMonitorService.gpus || []
 
-            Rectangle {
+            StyledRect {
                 id: videocard
                 Layout.alignment: Qt.AlignTop
                 Layout.fillWidth: true
@@ -288,7 +288,7 @@ ColumnLayout {
     }
 
     // Memory & Swap Section
-    Rectangle {
+    StyledRect {
         Layout.alignment: Qt.AlignTop
         Layout.fillWidth: true
         Layout.preferredHeight: 120
@@ -419,7 +419,7 @@ ColumnLayout {
         spacing: Appearance.padding.normal
 
         // Network
-        Rectangle {
+        StyledRect {
             Layout.fillWidth: true
             Layout.preferredWidth: 1
             Layout.preferredHeight: 80
@@ -484,7 +484,7 @@ ColumnLayout {
         }
 
         // Disk
-        Rectangle {
+        StyledRect {
             Layout.fillWidth: true
             Layout.preferredWidth: 1
             Layout.preferredHeight: 80
@@ -549,7 +549,7 @@ ColumnLayout {
         }
     }
 
-    component InfoBadge: Rectangle {
+    component InfoBadge: StyledRect {
         id: badge
         property string text: ""
         property color badgeColor: "#e0e0e0"
@@ -573,7 +573,7 @@ ColumnLayout {
         }
     }
 
-    component AnimatedBar: Rectangle {
+    component AnimatedBar: StyledRect {
         id: bar
         property real value: 0.0        // Value between 0 and 1
         property color barColor: "blue"
@@ -585,7 +585,7 @@ ColumnLayout {
         implicitHeight: 16
         color: backgroundColor
 
-        Rectangle {
+        StyledRect {
             id: fillBar
             width: bar.width * Math.min(1, Math.max(0, bar.value))
             height: bar.height

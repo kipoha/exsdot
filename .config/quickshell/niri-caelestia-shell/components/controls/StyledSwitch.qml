@@ -39,7 +39,7 @@ Switch {
                 opacity: root.pressed ? 0.1 : root.hovered ? 0.08 : 0
 
                 Behavior on opacity {
-                    NumberAnim {}
+                    Anim {}
                 }
             }
 
@@ -91,7 +91,7 @@ Switch {
                     strokeWidth: Appearance.font.size.larger * 0.15
                     strokeColor: root.checked ? Colours.palette.m3primary : Colours.palette.m3surfaceContainerHighest
                     fillColor: "transparent"
-                    capStyle: ShapePath.RoundCap
+                    capStyle: Appearance.rounding.scale === 0 ? ShapePath.SquareCap : ShapePath.RoundCap
 
                     startX: icon.start1.x
                     startY: icon.start1.y
@@ -110,11 +110,7 @@ Switch {
                     }
 
                     Behavior on strokeColor {
-                        ColorAnimation {
-                            duration: Appearance.anim.durations.normal
-                            easing.type: Easing.BezierSpline
-                            easing.bezierCurve: Appearance.anim.curves.standard
-                        }
+                        CAnim {}
                     }
                 }
 
@@ -133,11 +129,11 @@ Switch {
             }
 
             Behavior on x {
-                NumberAnim {}
+                Anim {}
             }
 
             Behavior on implicitWidth {
-                NumberAnim {}
+                Anim {}
             }
         }
     }
@@ -146,12 +142,6 @@ Switch {
         anchors.fill: parent
         cursorShape: Qt.PointingHandCursor
         enabled: false
-    }
-
-    component NumberAnim: NumberAnimation {
-        duration: Appearance.anim.durations.normal
-        easing.type: Easing.BezierSpline
-        easing.bezierCurve: Appearance.anim.curves.standard
     }
 
     component PropAnim: PropertyAnimation {

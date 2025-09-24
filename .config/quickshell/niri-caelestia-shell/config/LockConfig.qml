@@ -1,7 +1,9 @@
 import Quickshell.Io
 
 JsonObject {
-    property int maxNotifs: 5
+    property bool recolourLogo: false
+    property bool enableFprint: true
+    property int maxFprintTries: 3
     property Sizes sizes: Sizes {}
 
     component Sizes: JsonObject {

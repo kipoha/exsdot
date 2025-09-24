@@ -3,14 +3,15 @@ import qs.components.effects
 import qs.components.images
 import qs.services
 import qs.config
+import Caelestia
 import Quickshell
 import Quickshell.Widgets
 import QtQuick
 
-StyledRect {
+Item {
     id: root
 
-    required property Wallpapers.Wallpaper modelData
+    required property FileSystemEntry modelData
     required property PersistentProperties visibilities
 
     scale: 0.5
@@ -45,16 +46,24 @@ StyledRect {
         }
     }
 
-    ClippingRectangle {
+    StyledClippingRect {
         id: image
 
         anchors.horizontalCenter: parent.horizontalCenter
         y: Appearance.padding.large
-        color: "transparent"
+        color: Colours.tPalette.m3surfaceContainer
         radius: Appearance.rounding.normal
 
         implicitWidth: Config.launcher.sizes.wallpaperWidth
         implicitHeight: implicitWidth / 16 * 9
+
+        MaterialIcon {
+            anchors.centerIn: parent
+            text: "image"
+            color: Colours.tPalette.m3outline
+            font.pointSize: Appearance.font.size.extraLarge * 2
+            font.weight: 600
+        }
 
         CachingImage {
             path: root.modelData.path
@@ -75,7 +84,7 @@ StyledRect {
         horizontalAlignment: Text.AlignHCenter
         elide: Text.ElideRight
         renderType: Text.QtRendering
-        text: root.modelData.name
+        text: root.modelData.relativePath
         font.pointSize: Appearance.font.size.normal
     }
 
@@ -85,11 +94,5 @@ StyledRect {
 
     Behavior on opacity {
         Anim {}
-    }
-
-    component Anim: NumberAnimation {
-        duration: Appearance.anim.durations.normal
-        easing.type: Easing.BezierSpline
-        easing.bezierCurve: Appearance.anim.curves.standard
     }
 }

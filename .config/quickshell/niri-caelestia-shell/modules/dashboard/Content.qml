@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import qs.components
 import qs.config
 import Quickshell
 import Quickshell.Widgets
@@ -7,6 +8,7 @@ import QtQuick
 import QtQuick.Layouts
 //later additions
 import qs.components
+import qs.components.widgets
 import qs.services
 
 Item {
@@ -126,11 +128,7 @@ Item {
                 }
 
                 Behavior on contentX {
-                    NumberAnimation {
-                        duration: Appearance.anim.durations.normal
-                        easing.type: Easing.BezierSpline
-                        easing.bezierCurve: Appearance.anim.curves.standard
-                    }
+                    Anim {}
                 }
             }
 
@@ -146,7 +144,7 @@ Item {
             }
 
             RowLayout {
-                id: windowdecorations
+                id: styledRadialButton
                 Layout.alignment: Qt.AlignLeft
                 Layout.topMargin: Appearance.spacing.small
                 Layout.leftMargin: Appearance.spacing.small
@@ -162,73 +160,21 @@ Item {
                     Layout.fillWidth: true
                 }
 
-                RowLayout {
-
-                    Loader {
-                        active: Niri.focusedWindow && Niri.focusedWindow.is_floating
-                        asynchronous: true
-                        visible: active
-
-                        sourceComponent: WindowDecorations {
-                            basecolor: Colours.palette.m3secondaryContainer
-                            onColor: Colours.palette.m3onSecondaryContainer
-                            disabled: !Niri.focusedWindow
-
-                            icon: "push_pin"
-                            function onClicked(): void {
-                                // TODO Add a way to pin in Niri.
-                                Niri.dispatch(`pin address:0x${root.client?.address}`);
-                            }
-                        }
-                    }
-
-                    WindowDecorations {
-                        disabled: !Niri.focusedWindow
-                        basecolor: Niri.focusedWindow.is_floating ? Colours.palette.m3primary : Colours.palette.m3secondaryContainer
-                        onColor: Niri.focusedWindow.is_floating ? Colours.palette.m3onPrimary : Colours.palette.m3onSecondaryContainer
-
-                        icon: Niri.focusedWindow.is_floating ? "grid_view" : "picture_in_picture"
-                        function onClicked(): void {
-                            Niri.toggleWindowFloating();
-                        }
-                    }
-
-                    WindowDecorations {
-                        disabled: !Niri.focusedWindow
-                        basecolor: Colours.palette.m3tertiary
-                        onColor: Colours.palette.m3onTertiary
-
-                        icon: "fullscreen"
-                        function onClicked(): void {
-                            Niri.toggleMaximize();
-                        }
-                    }
-                    WindowDecorations {
-                        disabled: !Niri.focusedWindow
-                        basecolor: Colours.palette.m3errorContainer
-                        onColor: Colours.palette.m3onErrorContainer
-                        icon: "close"
-                        function onClicked(): void {
-                            Niri.closeFocusedWindow();
-                        }
-                    }
-                }
+                WindowDecorations {}
             }
         }
     }
 
     Behavior on implicitWidth {
-        NumberAnimation {
+        Anim {
             duration: Appearance.anim.durations.large
-            easing.type: Easing.BezierSpline
             easing.bezierCurve: Appearance.anim.curves.emphasized
         }
     }
 
     Behavior on implicitHeight {
-        NumberAnimation {
+        Anim {
             duration: Appearance.anim.durations.large
-            easing.type: Easing.BezierSpline
             easing.bezierCurve: Appearance.anim.curves.emphasized
         }
     }

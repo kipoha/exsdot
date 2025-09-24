@@ -1,4 +1,8 @@
+pragma ComponentBehavior: Bound
+
+import qs.components
 import qs.components.containers
+import qs.services
 import qs.config
 import Quickshell
 import Quickshell.Wayland
@@ -27,7 +31,37 @@ Loader {
             anchors.left: true
             anchors.right: true
 
-            Wallpaper {}
+            Wallpaper {
+                id: wallpaper
+            }
+
+            Loader {
+                //TODO MAKE SURE IT WORKS
+                readonly property bool shouldBeActive: Config.background.visualiser.enabled && (!Config.background.visualiser.autoHide || Niri.getActiveWorkspaceWindows.values.every(w => w.is_floating)) ? 1 : 0
+                property real offset: shouldBeActive ? 0 : win.modelData.height * 0.2
+
+                anchors.fill: parent
+                anchors.topMargin: offset
+                anchors.bottomMargin: -offset
+                opacity: shouldBeActive ? 1 : 0
+                active: opacity > 0
+                asynchronous: true
+
+                sourceComponent: Visualiser {
+                    screen: win.modelData
+                    wallpaper: wallpaper
+                }
+
+                Behavior on offset {
+                    Anim {}
+                }
+
+                Behavior on opacity {
+                    Anim {}
+                }
+            }
+
+            mask: Region {}
 
             Loader {
                 anchors.right: parent.right

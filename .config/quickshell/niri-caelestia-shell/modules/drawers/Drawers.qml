@@ -77,11 +77,7 @@ Variants {
                 color: Colours.palette.m3scrim
 
                 Behavior on opacity {
-                    NumberAnimation {
-                        duration: Appearance.anim.durations.normal
-                        easing.type: Easing.BezierSpline
-                        easing.bezierCurve: Appearance.anim.curves.standard
-                    }
+                    Anim {}
                 }
             }
 
@@ -132,17 +128,19 @@ Variants {
                     visibilities: visibilities
                     bar: bar
                 }
-            }
 
-            BarWrapper {
-                id: bar
+                BarWrapper {
+                    id: bar
 
-                anchors.top: parent.top
-                anchors.bottom: parent.bottom
+                    anchors.top: parent.top
+                    anchors.bottom: parent.bottom
 
-                screen: scope.modelData
-                visibilities: visibilities
-                popouts: panels.popouts
+                    screen: scope.modelData
+                    visibilities: visibilities
+                    popouts: panels.popouts
+
+                    Component.onCompleted: Visibilities.bars.set(scope.modelData, this)
+                }
             }
         }
     }

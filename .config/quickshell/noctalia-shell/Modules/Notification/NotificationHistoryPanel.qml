@@ -12,9 +12,9 @@ import qs.Widgets
 NPanel {
   id: root
 
-  panelWidth: 380 * scaling
-  panelHeight: 500 * scaling
-  panelAnchorRight: true
+  preferredWidth: 380
+  preferredHeight: 480
+  panelKeyboardFocus: true
 
   panelContent: Rectangle {
     id: notificationRect
@@ -25,18 +25,19 @@ NPanel {
       anchors.margins: Style.marginL * scaling
       spacing: Style.marginM * scaling
 
+      // Header section
       RowLayout {
         Layout.fillWidth: true
         spacing: Style.marginM * scaling
 
         NIcon {
-          text: "notifications"
+          icon: "bell"
           font.pointSize: Style.fontSizeXXL * scaling
           color: Color.mPrimary
         }
 
         NText {
-          text: "Notification History"
+          text: "Notifications"
           font.pointSize: Style.fontSizeL * scaling
           font.weight: Style.fontWeightBold
           color: Color.mOnSurface
@@ -44,19 +45,28 @@ NPanel {
         }
 
         NIconButton {
-          icon: "delete"
+          icon: Settings.data.notifications.doNotDisturb ? "bell-off" : "bell"
+          tooltipText: `'Do not disturb' ${Settings.data.notifications.doNotDisturb ? "enabled" : "disabled"}`
+          baseSize: Style.baseWidgetSize * 0.8
+          onClicked: Settings.data.notifications.doNotDisturb = !Settings.data.notifications.doNotDisturb
+        }
+
+        NIconButton {
+          icon: "trash"
           tooltipText: "Clear history"
-          sizeRatio: 0.8
-          onClicked: NotificationService.clearHistory()
+          baseSize: Style.baseWidgetSize * 0.8
+          onClicked: {
+            NotificationService.clearHistory()
+            // Close panel as there is nothing more to see.
+            root.close()
+          }
         }
 
         NIconButton {
           icon: "close"
           tooltipText: "Close"
-          sizeRatio: 0.8
-          onClicked: {
-            root.close()
-          }
+          baseSize: Style.baseWidgetSize * 0.8
+          onClicked: root.close()
         }
       }
 
@@ -65,115 +75,184 @@ NPanel {
       }
 
       // Empty state when no notifications
-      Item {
+      ColumnLayout {
         Layout.fillWidth: true
         Layout.fillHeight: true
-        visible: NotificationService.historyModel.count === 0
+        Layout.alignment: Qt.AlignHCenter
+        visible: NotificationService.historyList.count === 0
+        spacing: Style.marginL * scaling
 
-        ColumnLayout {
-          anchors.centerIn: parent
-          spacing: Style.marginM * scaling
+        Item {
+          Layout.fillHeight: true
+        }
 
-          NIcon {
-            text: "notifications_off"
-            font.pointSize: Style.fontSizeXXXL * scaling
-            color: Color.mOnSurface
-            Layout.alignment: Qt.AlignHCenter
-          }
+        NIcon {
+          icon: "bell-off"
+          font.pointSize: 64 * scaling
+          color: Color.mOnSurfaceVariant
+          Layout.alignment: Qt.AlignHCenter
+        }
 
-          NText {
-            text: "No notifications"
-            font.pointSize: Style.fontSizeL * scaling
-            color: Color.mOnSurface
-            Layout.alignment: Qt.AlignHCenter
-          }
+        NText {
+          text: "No notifications"
+          font.pointSize: Style.fontSizeL * scaling
+          color: Color.mOnSurfaceVariant
+          Layout.alignment: Qt.AlignHCenter
+        }
 
-          NText {
-            text: "Your notifications will show up here as they arrive."
-            font.pointSize: Style.fontSizeNormal * scaling
-            color: Color.mOnSurfaceVariant
-            Layout.alignment: Qt.AlignHCenter
-          }
+        NText {
+          text: "Your notifications will show up here as they arrive."
+          font.pointSize: Style.fontSizeS * scaling
+          color: Color.mOnSurfaceVariant
+          Layout.alignment: Qt.AlignHCenter
+          Layout.fillWidth: true
+          wrapMode: Text.Wrap
+          horizontalAlignment: Text.AlignHCenter
+        }
+
+        Item {
+          Layout.fillHeight: true
         }
       }
 
-      ListView {
+      // Notification list
+      NListView {
         id: notificationList
         Layout.fillWidth: true
         Layout.fillHeight: true
-        model: NotificationService.historyModel
+        horizontalPolicy: ScrollBar.AlwaysOff
+        verticalPolicy: ScrollBar.AsNeeded
+
+        model: NotificationService.historyList
         spacing: Style.marginM * scaling
         clip: true
         boundsBehavior: Flickable.StopAtBounds
-        visible: NotificationService.historyModel.count > 0
+        visible: NotificationService.historyList.count > 0
 
         delegate: Rectangle {
-          width: notificationList ? notificationList.width : 380 * scaling
-          height: Math.max(80, notificationContent.height + 30)
+          property string notificationId: model.id
+
+          width: notificationList.width
+          height: notificationLayout.implicitHeight + (Style.marginM * scaling * 2)
           radius: Style.radiusM * scaling
-          color: notificationMouseArea.containsMouse ? Color.mSecondary : Color.mSurfaceVariant
+          color: Color.mSurfaceVariant
+          border.color: Qt.alpha(Color.mOutline, Style.opacityMedium)
+          border.width: Math.max(1, Style.borderS * scaling)
+
+          // Smooth color transition on hover
+          Behavior on color {
+            ColorAnimation {
+              duration: Style.animationFast
+            }
+          }
 
           RowLayout {
-            anchors {
-              fill: parent
-              margins: Style.marginM * scaling
-            }
+            id: notificationLayout
+            anchors.fill: parent
+            anchors.margins: Style.marginM * scaling
             spacing: Style.marginM * scaling
 
-            // Notification content
-            Column {
-              id: notificationContent
-              Layout.fillWidth: true
-              Layout.alignment: Qt.AlignVCenter
-              spacing: Style.marginXXS * scaling
+            ColumnLayout {
+              NImageCircled {
+                Layout.preferredWidth: 40 * scaling
+                Layout.preferredHeight: 40 * scaling
+                Layout.alignment: Qt.AlignTop
+                Layout.topMargin: 20 * scaling
+                imagePath: model.cachedImage || model.originalImage || ""
+                borderColor: Color.transparent
+                borderWidth: 0
+                fallbackIcon: "bell"
+                fallbackIconSize: 24 * scaling
+              }
+              Item {
+                Layout.fillHeight: true
+              }
+            }
 
+            // Notification content column
+            ColumnLayout {
+              Layout.fillWidth: true
+              Layout.alignment: Qt.AlignTop
+              spacing: Style.marginXS * scaling
+
+              // Header row with app name and timestamp
+              RowLayout {
+                Layout.fillWidth: true
+                spacing: Style.marginS * scaling
+
+                // Urgency indicator
+                Rectangle {
+                  Layout.preferredWidth: 6 * scaling
+                  Layout.preferredHeight: 6 * scaling
+                  Layout.alignment: Qt.AlignVCenter
+                  radius: 3 * scaling
+                  visible: model.urgency !== 1
+                  color: {
+                    if (model.urgency === 2)
+                      return Color.mError
+                    else if (model.urgency === 0)
+                      return Color.mOnSurfaceVariant
+                    else
+                      return Color.transparent
+                  }
+                }
+
+                NText {
+                  text: model.appName || "Unknown App"
+                  font.pointSize: Style.fontSizeXS * scaling
+                  color: Color.mSecondary
+                }
+
+                NText {
+                  text: Time.formatRelativeTime(model.timestamp)
+                  font.pointSize: Style.fontSizeXS * scaling
+                  color: Color.mSecondary
+                }
+
+                Item {
+                  Layout.fillWidth: true
+                }
+              }
+
+              // Summary
               NText {
-                text: (summary || "No summary").substring(0, 100)
+                text: model.summary || "No summary"
                 font.pointSize: Style.fontSizeM * scaling
                 font.weight: Font.Medium
-                color: notificationMouseArea.containsMouse ? Color.mSurface : Color.mPrimary
+                color: Color.mOnSurface
+                textFormat: Text.PlainText
                 wrapMode: Text.Wrap
-                width: parent.width - 60
+                Layout.fillWidth: true
                 maximumLineCount: 2
                 elide: Text.ElideRight
               }
 
+              // Body
               NText {
-                text: (body || "").substring(0, 150)
-                font.pointSize: Style.fontSizeXS * scaling
-                color: notificationMouseArea.containsMouse ? Color.mSurface : Color.mOnSurface
+                text: model.body || ""
+                font.pointSize: Style.fontSizeS * scaling
+                color: Color.mOnSurfaceVariant
+                textFormat: Text.PlainText
                 wrapMode: Text.Wrap
-                width: parent.width - 60
+                Layout.fillWidth: true
                 maximumLineCount: 3
                 elide: Text.ElideRight
-              }
-
-              NText {
-                text: NotificationService.formatTimestamp(timestamp)
-                font.pointSize: Style.fontSizeXS * scaling
-                color: notificationMouseArea.containsMouse ? Color.mSurface : Color.mOnSurface
+                visible: text.length > 0
               }
             }
 
-            // Trash icon button
+            // Delete button
             NIconButton {
-              icon: "delete"
+              icon: "trash"
               tooltipText: "Delete notification"
-              sizeRatio: 0.7
+              baseSize: Style.baseWidgetSize * 0.7
+              Layout.alignment: Qt.AlignTop
 
               onClicked: {
-                Logger.log("NotificationHistory", "Removing notification:", summary)
-                NotificationService.historyModel.remove(index)
-                NotificationService.saveHistory()
+                // Remove from history using the service API
+                NotificationService.removeFromHistory(notificationId)
               }
             }
-          }
-
-          MouseArea {
-            id: notificationMouseArea
-            anchors.fill: parent
-            anchors.rightMargin: Style.marginL * 3 * scaling
-            hoverEnabled: true
           }
         }
       }

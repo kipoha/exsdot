@@ -8,9 +8,9 @@ import qs.Commons
 Singleton {
   id: root
 
+  property bool shouldRun: BarService.hasAudioVisualizer || (PanelService.getPanel("controlCenterPanel") === PanelService.openedPanel) || PanelService.lockScreen.active
   property var values: Array(barsCount).fill(0)
   property int barsCount: 24
-
   property var config: ({
                           "general": {
                             "bars": barsCount,
@@ -37,10 +37,11 @@ Singleton {
   Process {
     id: process
     stdinEnabled: true
-    running: (Settings.data.audio.visualizerType !== "none")
-             && (PanelService.getPanel("sidePanel").active || Settings.data.audio.showMiniplayerCava
-                 || (PanelService.lockScreen && PanelService.lockScreen.active))
+    running: root.shouldRun
     command: ["cava", "-p", "/dev/stdin"]
+    onRunningChanged: {
+      Logger.log("Cava", "Process running:", running)
+    }
     onExited: {
       stdinEnabled = true
       values = Array(barsCount).fill(0)

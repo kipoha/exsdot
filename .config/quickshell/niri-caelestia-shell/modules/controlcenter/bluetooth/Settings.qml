@@ -363,11 +363,7 @@ ColumnLayout {
                             opacity: root.session.bt.editingAdapterName ? 1 : 0
 
                             Behavior on border.color {
-                                ColorAnimation {
-                                    duration: Appearance.anim.durations.normal
-                                    easing.type: Easing.BezierSpline
-                                    easing.bezierCurve: Appearance.anim.curves.standard
-                                }
+                                CAnim {}
                             }
 
                             Behavior on opacity {
@@ -425,8 +421,8 @@ ColumnLayout {
                     implicitWidth: implicitHeight
                     implicitHeight: editIcon.implicitHeight + Appearance.padding.smaller * 2
 
-                    radius: root.session.bt.editingAdapterName ? Appearance.rounding.small : implicitHeight / 2
-                    color: root.session.bt.editingAdapterName ? Colours.palette.m3primary : "transparent"
+                    radius: root.session.bt.editingAdapterName ? Appearance.rounding.small : implicitHeight / 2 * Math.min(1, Appearance.rounding.scale)
+                    color: Qt.alpha(Colours.palette.m3primary, root.session.bt.editingAdapterName ? 1 : 0)
 
                     StateLayer {
                         color: root.session.bt.editingAdapterName ? Colours.palette.m3onPrimary : Colours.palette.m3onSurface
@@ -538,11 +534,5 @@ ColumnLayout {
 
             cLayer: 2
         }
-    }
-
-    component Anim: NumberAnimation {
-        duration: Appearance.anim.durations.normal
-        easing.type: Easing.BezierSpline
-        easing.bezierCurve: Appearance.anim.curves.standard
     }
 }

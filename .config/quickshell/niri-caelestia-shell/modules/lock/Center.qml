@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import qs.components
+import qs.components.controls
 import qs.components.images
 import qs.services
 import qs.config
@@ -17,6 +18,7 @@ ColumnLayout {
     readonly property int centerWidth: Config.lock.sizes.centerWidth * centerScale
 
     Layout.preferredWidth: centerWidth
+    Layout.fillWidth: false
     Layout.fillHeight: true
 
     spacing: Appearance.spacing.large * 2
@@ -95,8 +97,7 @@ ColumnLayout {
             anchors.centerIn: parent
 
             text: "person"
-            fill: 1
-            grade: 200
+            color: Colours.palette.m3onSurfaceVariant
             font.pointSize: Math.floor(root.centerWidth / 4)
         }
 
@@ -104,7 +105,7 @@ ColumnLayout {
             id: pfp
 
             anchors.fill: parent
-            path: `${Paths.stringify(Paths.home)}/.face`
+            path: `${Paths.home}/.face`
         }
     }
 
@@ -124,7 +125,7 @@ ColumnLayout {
         }
 
         Keys.onPressed: event => {
-            if (!root.lock.locked)
+            if (root.lock.unlocking)
                 return;
 
             if (event.key === Qt.Key_Enter || event.key === Qt.Key_Return)
@@ -149,9 +150,34 @@ ColumnLayout {
             anchors.margins: Appearance.padding.small
             spacing: Appearance.spacing.normal
 
-            MaterialIcon {
-                Layout.leftMargin: Appearance.padding.smaller
-                text: "lock"
+            Item {
+                implicitWidth: implicitHeight
+                implicitHeight: fprintIcon.implicitHeight + Appearance.padding.small * 2
+
+                MaterialIcon {
+                    id: fprintIcon
+
+                    anchors.centerIn: parent
+                    animate: true
+                    text: {
+                        if (root.lock.pam.fprint.tries >= Config.lock.maxFprintTries)
+                            return "fingerprint_off";
+                        if (root.lock.pam.fprint.active)
+                            return "fingerprint";
+                        return "lock";
+                    }
+                    color: root.lock.pam.fprint.tries >= Config.lock.maxFprintTries ? Colours.palette.m3error : Colours.palette.m3onSurface
+                    opacity: root.lock.pam.passwd.active ? 0 : 1
+
+                    Behavior on opacity {
+                        Anim {}
+                    }
+                }
+
+                StyledBusyIndicator {
+                    anchors.fill: parent
+                    running: root.lock.pam.passwd.active
+                }
             }
 
             InputField {
@@ -187,9 +213,206 @@ ColumnLayout {
         }
     }
 
-    component Anim: NumberAnimation {
-        duration: Appearance.anim.durations.normal
-        easing.type: Easing.BezierSpline
-        easing.bezierCurve: Appearance.anim.curves.standard
+    Item {
+        Layout.fillWidth: true
+        Layout.topMargin: -Appearance.spacing.large
+
+        implicitHeight: Math.max(message.implicitHeight, stateMessage.implicitHeight)
+
+        Behavior on implicitHeight {
+            Anim {}
+        }
+
+        StyledText {
+            id: stateMessage
+
+            readonly property string msg: {
+                if (Niri.kbLayout !== Niri.defaultKbLayout) {
+                    if (Niri.capsLock && Niri.numLock)
+                        return qsTr("Caps lock and Num lock are ON.\nKeyboard layout: %1").arg(Niri.kbLayoutFull);
+                    if (Niri.capsLock)
+                        return qsTr("Caps lock is ON. Kb layout: %1").arg(Niri.kbLayoutFull);
+                    if (Niri.numLock)
+                        return qsTr("Num lock is ON. Kb layout: %1").arg(Niri.kbLayoutFull);
+                    return qsTr("Keyboard layout: %1").arg(Niri.kbLayoutFull);
+                }
+
+                if (Niri.capsLock && Niri.numLock)
+                    return qsTr("Caps lock and Num lock are ON.");
+                if (Niri.capsLock)
+                    return qsTr("Caps lock is ON.");
+                if (Niri.numLock)
+                    return qsTr("Num lock is ON.");
+
+                return "";
+            }
+
+            property bool shouldBeVisible
+
+            onMsgChanged: {
+                if (msg) {
+                    if (opacity > 0) {
+                        animate = true;
+                        text = msg;
+                        animate = false;
+                    } else {
+                        text = msg;
+                    }
+                    shouldBeVisible = true;
+                } else {
+                    shouldBeVisible = false;
+                }
+            }
+
+            anchors.left: parent.left
+            anchors.right: parent.right
+
+            scale: shouldBeVisible && !message.msg ? 1 : 0.7
+            opacity: shouldBeVisible && !message.msg ? 1 : 0
+            color: Colours.palette.m3onSurfaceVariant
+            animateProp: "opacity"
+
+            font.family: Appearance.font.family.mono
+            horizontalAlignment: Qt.AlignHCenter
+            wrapMode: Text.WrapAtWordBoundaryOrAnywhere
+            lineHeight: 1.2
+
+            Behavior on scale {
+                Anim {}
+            }
+
+            Behavior on opacity {
+                Anim {}
+            }
+        }
+
+        StyledText {
+            id: message
+
+            readonly property Pam pam: root.lock.pam
+            readonly property string msg: {
+                if (pam.fprintState === "error")
+                    return qsTr("ERROR: %1").arg(pam.fprint.message);
+                if (pam.state === "error")
+                    return qsTr("ERROR: %1").arg(pam.passwd.message);
+
+                if (pam.lockMessage)
+                    return pam.lockMessage;
+
+                if (pam.state === "max" && pam.fprintState === "max")
+                    return qsTr("Maximum password and fingerprint attempts reached.");
+                if (pam.state === "max") {
+                    if (pam.fprint.available)
+                        return qsTr("Maximum password attempts reached. Please use fingerprint.");
+                    return qsTr("Maximum password attempts reached.");
+                }
+                if (pam.fprintState === "max")
+                    return qsTr("Maximum fingerprint attempts reached. Please use password.");
+
+                if (pam.state === "fail") {
+                    if (pam.fprint.available)
+                        return qsTr("Incorrect password. Please try again or use fingerprint.");
+                    return qsTr("Incorrect password. Please try again.");
+                }
+                if (pam.fprintState === "fail")
+                    return qsTr("Fingerprint not recognized (%1/%2). Please try again or use password.").arg(pam.fprint.tries).arg(Config.lock.maxFprintTries);
+
+                return "";
+            }
+
+            anchors.left: parent.left
+            anchors.right: parent.right
+
+            scale: 0.7
+            opacity: 0
+            color: Colours.palette.m3error
+
+            font.pointSize: Appearance.font.size.small
+            font.family: Appearance.font.family.mono
+            horizontalAlignment: Qt.AlignHCenter
+            wrapMode: Text.WrapAtWordBoundaryOrAnywhere
+
+            onMsgChanged: {
+                if (msg) {
+                    if (opacity > 0) {
+                        animate = true;
+                        text = msg;
+                        animate = false;
+
+                        exitAnim.stop();
+                        if (scale < 1)
+                            appearAnim.restart();
+                        else
+                            flashAnim.restart();
+                    } else {
+                        text = msg;
+                        exitAnim.stop();
+                        appearAnim.restart();
+                    }
+                } else {
+                    appearAnim.stop();
+                    flashAnim.stop();
+                    exitAnim.start();
+                }
+            }
+
+            Connections {
+                target: root.lock.pam
+
+                function onFlashMsg(): void {
+                    exitAnim.stop();
+                    if (message.scale < 1)
+                        appearAnim.restart();
+                    else
+                        flashAnim.restart();
+                }
+            }
+
+            Anim {
+                id: appearAnim
+
+                target: message
+                properties: "scale,opacity"
+                to: 1
+                onFinished: flashAnim.restart()
+            }
+
+            SequentialAnimation {
+                id: flashAnim
+
+                loops: 2
+
+                FlashAnim {
+                    to: 0.3
+                }
+                FlashAnim {
+                    to: 1
+                }
+            }
+
+            ParallelAnimation {
+                id: exitAnim
+
+                Anim {
+                    target: message
+                    property: "scale"
+                    to: 0.7
+                    duration: Appearance.anim.durations.large
+                }
+                Anim {
+                    target: message
+                    property: "opacity"
+                    to: 0
+                    duration: Appearance.anim.durations.large
+                }
+            }
+        }
+    }
+
+    component FlashAnim: NumberAnimation {
+        target: message
+        property: "opacity"
+        duration: Appearance.anim.durations.small
+        easing.type: Easing.Linear
     }
 }

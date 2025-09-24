@@ -25,7 +25,7 @@ Column {
         anchors.leftMargin: Appearance.padding.small
         height: 24 + Appearance.padding.large
 
-        Rectangle {
+        StyledRect {
             width: 80
             height: 20
             color: processHeaderArea.containsMouse ? Qt.rgba(Colours.palette.m3onSurface.r, Colours.palette.m3onSurface.g, Colours.palette.m3onSurface.b, 0.08) : "transparent"
@@ -63,7 +63,7 @@ Column {
             }
         }
 
-        Rectangle {
+        StyledRect {
             width: 80
             height: 20
             color: cpuHeaderArea.containsMouse ? Qt.rgba(Colours.palette.m3onSurface.r, Colours.palette.m3onSurface.g, Colours.palette.m3onSurface.b, 0.08) : "transparent"
@@ -101,7 +101,7 @@ Column {
             }
         }
 
-        Rectangle {
+        StyledRect {
             width: 80
             height: 20
             color: memoryHeaderArea.containsMouse ? Qt.rgba(Colours.palette.m3onSurface.r, Colours.palette.m3onSurface.g, Colours.palette.m3onSurface.b, 0.08) : "transparent"
@@ -139,7 +139,7 @@ Column {
             }
         }
 
-        Rectangle {
+        StyledRect {
             width: 50
             height: 20
             color: pidHeaderArea.containsMouse ? Qt.rgba(Colours.palette.m3onSurface.r, Colours.palette.m3onSurface.g, Colours.palette.m3onSurface.b, 0.08) : "transparent"
@@ -178,7 +178,7 @@ Column {
             }
         }
 
-        Rectangle {
+        StyledRect {
             width: 28
             height: 28
             radius: Appearance.rounding.normal

@@ -6,52 +6,6 @@ import Quickshell.Services.Notifications
 Singleton {
     id: root
 
-    readonly property var osIcons: ({
-            almalinux: "",
-            alpine: "",
-            arch: "",
-            archcraft: "",
-            arcolinux: "",
-            artix: "",
-            centos: "",
-            debian: "",
-            devuan: "",
-            elementary: "",
-            endeavouros: "",
-            fedora: "",
-            freebsd: "",
-            garuda: "",
-            gentoo: "",
-            hyperbola: "",
-            kali: "",
-            linuxmint: "󰣭",
-            mageia: "",
-            openmandriva: "",
-            manjaro: "",
-            neon: "",
-            nixos: "",
-            opensuse: "",
-            suse: "",
-            sles: "",
-            sles_sap: "",
-            "opensuse-tumbleweed": "",
-            parrot: "",
-            pop: "",
-            raspbian: "",
-            rhel: "",
-            rocky: "",
-            slackware: "",
-            solus: "",
-            steamos: "",
-            tails: "",
-            trisquel: "",
-            ubuntu: "",
-            vanilla: "",
-            void: "",
-            zorin: "",
-            cachyos: "" //placeholder
-        })
-
     readonly property var weatherIcons: ({
             "113": "clear_day",
             "116": "partly_cloudy_day",
@@ -145,6 +99,11 @@ Singleton {
 
     function getAppIcon(name: string, fallback: string): string {
         const icon = DesktopEntries.heuristicLookup(name)?.icon;
+
+        //Temp fix until I find a better solution
+        if (String(icon) === "undefined")
+            return Quickshell.iconPath(icon, name);
+
         if (fallback !== "undefined")
             return Quickshell.iconPath(icon, fallback);
         return Quickshell.iconPath(icon);
@@ -193,6 +152,7 @@ Singleton {
     }
 
     function getNotifIcon(summary: string, urgency: int): string {
+        summary = summary.toLowerCase();
         if (summary.includes("reboot"))
             return "restart_alt";
         if (summary.includes("recording"))
@@ -228,5 +188,26 @@ Singleton {
         if (volume > 0)
             return "volume_down";
         return "volume_mute";
+    }
+
+    function getMicVolumeIcon(volume: real, isMuted: bool): string {
+        if (!isMuted && volume > 0)
+            return "mic";
+        return "mic_off";
+    }
+
+    function getSpecialWsIcon(name: string): string {
+        name = name.toLowerCase().slice("special:".length);
+        if (name === "special")
+            return "star";
+        if (name === "communication")
+            return "forum";
+        if (name === "music")
+            return "music_note";
+        if (name === "todo")
+            return "checklist";
+        if (name === "sysmon")
+            return "monitor_heart";
+        return name[0].toUpperCase();
     }
 }

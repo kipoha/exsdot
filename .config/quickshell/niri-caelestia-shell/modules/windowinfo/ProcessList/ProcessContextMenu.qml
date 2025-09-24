@@ -57,11 +57,11 @@ Popup {
         }
     }
 
-    background: Rectangle {
+    background: StyledRect {
         color: "transparent"
     }
 
-    contentItem: Rectangle {
+    contentItem: StyledRect {
         id: menuContent
         color: Colours.palette.m3surfaceContainerHigh
         radius: Appearance.rounding.small
@@ -72,7 +72,7 @@ Popup {
             anchors.margins: Appearance.padding.small
             spacing: 1
 
-            Rectangle {
+            StyledRect {
                 width: parent.width
                 height: 28
                 radius: Appearance.rounding.small
@@ -102,7 +102,7 @@ Popup {
                 }
             }
 
-            Rectangle {
+            StyledRect {
                 width: parent.width
                 height: 28
                 radius: Appearance.rounding.small
@@ -133,13 +133,13 @@ Popup {
                 }
             }
 
-            Rectangle {
+            StyledRect {
                 width: parent.width - Appearance.padding.small * 2
                 height: 5
                 anchors.horizontalCenter: parent.horizontalCenter
                 color: "transparent"
 
-                Rectangle {
+                StyledRect {
                     anchors.centerIn: parent
                     width: parent.width
                     height: 1
@@ -147,7 +147,7 @@ Popup {
                 }
             }
 
-            Rectangle {
+            StyledRect {
                 width: parent.width
                 height: 28
                 radius: Appearance.rounding.small
@@ -180,7 +180,7 @@ Popup {
                 }
             }
 
-            Rectangle {
+            StyledRect {
                 width: parent.width
                 height: 28
                 radius: Appearance.rounding.small

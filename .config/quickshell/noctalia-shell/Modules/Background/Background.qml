@@ -3,6 +3,7 @@ import Quickshell
 import Quickshell.Wayland
 import qs.Commons
 import qs.Services
+import qs.Widgets
 
 Variants {
   id: backgroundVariants
@@ -41,9 +42,7 @@ Variants {
 
       // Fillmode default is "crop"
       property real fillMode: 1.0
-      property vector4d fillColor: Qt.vector4d(Settings.data.wallpaper.fillColor.r,
-                                               Settings.data.wallpaper.fillColor.g,
-                                               Settings.data.wallpaper.fillColor.b, 1.0)
+      property vector4d fillColor: Qt.vector4d(Settings.data.wallpaper.fillColor.r, Settings.data.wallpaper.fillColor.g, Settings.data.wallpaper.fillColor.b, 1.0)
 
       // On startup assign wallpaper immediately
       Component.onCompleted: {
@@ -137,7 +136,7 @@ Variants {
         property real screenWidth: width
         property real screenHeight: height
 
-        fragmentShader: Qt.resolvedUrl("../../Shaders/qsb/wp_fade.frag.qsb")
+        fragmentShader: Qt.resolvedUrl(Quickshell.shellDir + "/Shaders/qsb/wp_fade.frag.qsb")
       }
 
       // Wipe transition shader
@@ -162,7 +161,7 @@ Variants {
         property real screenWidth: width
         property real screenHeight: height
 
-        fragmentShader: Qt.resolvedUrl("../../Shaders/qsb/wp_wipe.frag.qsb")
+        fragmentShader: Qt.resolvedUrl(Quickshell.shellDir + "/Shaders/qsb/wp_wipe.frag.qsb")
       }
 
       // Disc reveal transition shader
@@ -189,7 +188,7 @@ Variants {
         property real screenWidth: width
         property real screenHeight: height
 
-        fragmentShader: Qt.resolvedUrl("../../Shaders/qsb/wp_disc.frag.qsb")
+        fragmentShader: Qt.resolvedUrl(Quickshell.shellDir + "/Shaders/qsb/wp_disc.frag.qsb")
       }
 
       // Diagonal stripes transition shader
@@ -216,7 +215,7 @@ Variants {
         property real screenWidth: width
         property real screenHeight: height
 
-        fragmentShader: Qt.resolvedUrl("../../Shaders/qsb/wp_stripes.frag.qsb")
+        fragmentShader: Qt.resolvedUrl(Quickshell.shellDir + "/Shaders/qsb/wp_stripes.frag.qsb")
       }
 
       // Animation for the transition progress
@@ -227,8 +226,7 @@ Variants {
         from: 0.0
         to: 1.0
         // The stripes shader feels faster visually, we make it a bit slower here.
-        duration: transitionType == "stripes" ? Settings.data.wallpaper.transitionDuration
-                                                * 1.6 : Settings.data.wallpaper.transitionDuration
+        duration: transitionType == "stripes" ? Settings.data.wallpaper.transitionDuration * 1.6 : Settings.data.wallpaper.transitionDuration
         easing.type: Easing.InOutCubic
         onFinished: {
           // Swap images after transition completes
@@ -237,7 +235,7 @@ Variants {
           transitionProgress = 0.0
           Qt.callLater(() => {
                          currentWallpaper.asynchronous = true
-                       }, 100)
+                       })
         }
       }
 

@@ -62,11 +62,7 @@ Item {
             }
 
             Behavior on fillColor {
-                ColorAnimation {
-                    duration: Appearance.anim.durations.normal
-                    easing.type: Easing.BezierSpline
-                    easing.bezierCurve: Appearance.anim.curves.standard
-                }
+                CAnim {}
             }
         }
     }
@@ -83,25 +79,24 @@ Item {
             anchors.rightMargin: Appearance.padding.larger - Appearance.padding.small
             anchors.bottomMargin: Appearance.padding.normal - Appearance.padding.small
 
-            text: qsTr(`"%1" selected`).arg(root.currentItem?.fileName)
+            Connections {
+                target: root
+
+                function onCurrentItemChanged(): void {
+                    if (root.currentItem)
+                        content.text = qsTr(`"%1" selected`).arg(root.currentItem.modelData.name);
+                }
+            }
         }
     }
 
     Behavior on implicitWidth {
         enabled: !!root.currentItem
 
-        NumberAnimation {
-            duration: Appearance.anim.durations.normal
-            easing.type: Easing.BezierSpline
-            easing.bezierCurve: Appearance.anim.curves.standard
-        }
+        Anim {}
     }
 
     Behavior on implicitHeight {
-        NumberAnimation {
-            duration: Appearance.anim.durations.normal
-            easing.type: Easing.BezierSpline
-            easing.bezierCurve: Appearance.anim.curves.standard
-        }
+        Anim {}
     }
 }

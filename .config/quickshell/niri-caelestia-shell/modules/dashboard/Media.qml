@@ -7,11 +7,11 @@ import qs.components.controls
 import qs.services
 import qs.utils
 import qs.config
+import Caelestia
 import Quickshell
 import Quickshell.Widgets
 import Quickshell.Services.Mpris
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Shapes
 
@@ -55,8 +55,12 @@ Item {
         onTriggered: Players.active?.positionChanged()
     }
 
-    Ref {
-        service: Cava
+    ServiceRef {
+        service: Cava.provider
+    }
+
+    ServiceRef {
+        service: BeatTracker
     }
 
     Shape {
@@ -71,6 +75,7 @@ Item {
         anchors.fill: cover
         anchors.margins: -Config.dashboard.sizes.mediaVisualiserSize
 
+        asynchronous: true
         preferredRendererType: Shape.CurveRenderer
         data: visualiserBars.instances
     }
@@ -79,22 +84,22 @@ Item {
         id: visualiserBars
 
         model: Array.from({
-            length: Config.dashboard.visualiserBars
+            length: Config.services.visualiserBars
         }, (_, i) => i)
 
         ShapePath {
             id: visualiserBar
 
             required property int modelData
-            readonly property int value: Math.max(1, Math.min(100, Cava.values[modelData]))
+            readonly property real value: Math.max(1e-3, Math.min(1, Cava.values[modelData]))
 
-            readonly property real angle: modelData * 2 * Math.PI / Config.dashboard.visualiserBars
-            readonly property real magnitude: value / 100 * Config.dashboard.sizes.mediaVisualiserSize
+            readonly property real angle: modelData * 2 * Math.PI / Config.services.visualiserBars
+            readonly property real magnitude: value * Config.dashboard.sizes.mediaVisualiserSize
             readonly property real cos: Math.cos(angle)
             readonly property real sin: Math.sin(angle)
 
-            capStyle: ShapePath.RoundCap
-            strokeWidth: 360 / Config.dashboard.visualiserBars - Appearance.spacing.small / 4
+            capStyle: Appearance.rounding.scale === 0 ? ShapePath.SquareCap : ShapePath.RoundCap
+            strokeWidth: 360 / Config.services.visualiserBars - Appearance.spacing.small / 4
             strokeColor: Colours.palette.m3primary
 
             startX: visualiser.centerX + (visualiser.innerX + strokeWidth / 2) * cos
@@ -106,11 +111,7 @@ Item {
             }
 
             Behavior on strokeColor {
-                ColorAnimation {
-                    duration: Appearance.anim.durations.normal
-                    easing.type: Easing.BezierSpline
-                    easing.bezierCurve: Appearance.anim.curves.standard
-                }
+                CAnim {}
             }
         }
     }
@@ -231,7 +232,7 @@ Item {
                 implicitWidth: Math.max(playIcon.implicitWidth, playIcon.implicitHeight) + padding * 2
                 implicitHeight: implicitWidth
 
-                radius: Players.active?.isPlaying ? Appearance.rounding.small : implicitHeight / 2
+                radius: Players.active?.isPlaying ? Appearance.rounding.small : implicitHeight / 2 * Math.min(1, Appearance.rounding.scale)
                 color: {
                     if (!Players.active?.canTogglePlaying)
                         return Qt.alpha(Colours.palette.m3onSurface, 0.1);
@@ -287,11 +288,34 @@ Item {
             implicitWidth: controls.implicitWidth * 1.5
             implicitHeight: Appearance.padding.normal * 3
 
-            value: root.playerProgress
             onMoved: {
                 const active = Players.active;
                 if (active?.canSeek && active?.positionSupported)
                     active.position = value * active.length;
+            }
+
+            Binding {
+                target: slider
+                property: "value"
+                value: root.playerProgress
+                when: !slider.pressed
+            }
+
+            CustomMouseArea {
+                anchors.fill: parent
+                acceptedButtons: Qt.NoButton
+
+                function onWheel(event: WheelEvent) {
+                    const active = Players.active;
+                    if (!active?.canSeek || !active?.positionSupported)
+                        return;
+
+                    event.accepted = true;
+                    const delta = event.angleDelta.y > 0 ? 10 : -10; // Time 10 seconds
+                    Qt.callLater(() => {
+                        active.position = Math.max(0, Math.min(active.length, active.position + delta));
+                    });
+                }
             }
         }
 
@@ -372,7 +396,7 @@ Item {
                     StyledText {
                         Layout.fillWidth: true
                         Layout.maximumWidth: playerSelector.implicitWidth - implicitHeight - parent.spacing - Appearance.padding.normal * 2
-                        text: Players.active?.identity ?? "No players"
+                        text: Players.active ? Players.getIdentity(Players.active) : qsTr("No players")
                         color: Players.active ? Colours.palette.m3onSurface : Colours.palette.m3onSurfaceVariant
                         elide: Text.ElideRight
                     }
@@ -444,7 +468,7 @@ Item {
                                     }
 
                                     StyledText {
-                                        text: player.modelData.identity
+                                        text: Players.getIdentity(player.modelData)
                                         color: Colours.palette.m3onSecondaryContainer
                                     }
                                 }
@@ -506,8 +530,8 @@ Item {
             height: visualiser.height * 0.75
 
             playing: Players.active?.isPlaying ?? false
-            speed: BeatDetector.bpm / 300
-            source: Paths.expandTilde(Config.paths.mediaGif)
+            speed: BeatTracker.bpm / 300
+            source: Paths.absolutePath(Config.paths.mediaGif)
             asynchronous: true
             fillMode: AnimatedImage.PreserveAspectFit
         }
@@ -578,11 +602,5 @@ Item {
             color: control.canUse ? Colours.palette.m3onSurface : Colours.palette.m3outline
             font.pointSize: control.fontSize
         }
-    }
-
-    component Anim: NumberAnimation {
-        duration: Appearance.anim.durations.normal
-        easing.type: Easing.BezierSpline
-        easing.bezierCurve: Appearance.anim.curves.standard
     }
 }

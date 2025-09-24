@@ -26,6 +26,15 @@ Loader {
     }
   }
 
+  function formatTime() {
+    return Settings.data.location.use12hourFormat ? Qt.formatDateTime(new Date(), "h:mm A") : Qt.formatDateTime(new Date(), "HH:mm")
+  }
+
+  function formatDate() {
+    // For full text date, day is always before month, so we use this format for everybody: Wednesday, September 17.
+    return Qt.formatDateTime(new Date(), "dddd, MMMM d")
+  }
+
   function scheduleUnloadAfterUnlock() {
     unloadAfterUnlockTimer.start()
   }
@@ -58,35 +67,11 @@ Loader {
             property real percent: isReady ? (battery.percentage * 100) : 0
             property bool charging: isReady ? battery.state === UPowerDeviceState.Charging : false
             property bool batteryVisible: isReady && percent > 0
-
-            function getIcon() {
-              if (!batteryVisible)
-                return ""
-              if (charging)
-                return "battery_android_bolt"
-              if (percent >= 95)
-                return "battery_android_full"
-              if (percent >= 85)
-                return "battery_android_6"
-              if (percent >= 70)
-                return "battery_android_5"
-              if (percent >= 55)
-                return "battery_android_4"
-              if (percent >= 40)
-                return "battery_android_3"
-              if (percent >= 25)
-                return "battery_android_2"
-              if (percent >= 10)
-                return "battery_android_1"
-              if (percent >= 0)
-                return "battery_android_0"
-            }
           }
 
           Item {
             id: keyboardLayout
-            property string currentLayout: (typeof KeyboardLayoutService !== 'undefined'
-                                            && KeyboardLayoutService.currentLayout) ? KeyboardLayoutService.currentLayout : "Unknown"
+            property string currentLayout: (typeof KeyboardLayoutService !== 'undefined' && KeyboardLayoutService.currentLayout) ? KeyboardLayoutService.currentLayout : "Unknown"
           }
 
           Image {
@@ -97,14 +82,6 @@ Loader {
             cache: true
             smooth: true
             mipmap: false
-          }
-
-          Rectangle {
-            anchors.fill: parent
-            color: Color.transparent
-            layer.enabled: true
-            layer.smooth: true
-            layer.samples: 4
           }
 
           Rectangle {
@@ -134,7 +111,7 @@ Loader {
                 width: Math.random() * 4 + 2
                 height: width
                 radius: width * 0.5
-                color: Qt.rgba(Color.mPrimary.r, Color.mPrimary.g, Color.mPrimary.b, 0.3)
+                color: Qt.alpha(Color.mPrimary, 0.3)
                 x: Math.random() * parent.width
                 y: Math.random() * parent.height
 
@@ -163,19 +140,21 @@ Loader {
               anchors.topMargin: 80 * scaling
               spacing: 40 * scaling
 
-              Column {
+              ColumnLayout {
                 spacing: Style.marginXS * scaling
                 Layout.alignment: Qt.AlignHCenter
 
                 NText {
                   id: timeText
-                  text: Qt.formatDateTime(new Date(), "HH:mm")
+                  text: formatTime()
                   font.family: Settings.data.ui.fontBillboard
-                  font.pointSize: Style.fontSizeXXXL * 6 * scaling
+                  // Smaller time display when using longer 12 hour format
+                  font.pointSize: Settings.data.location.use12hourFormat ? Style.fontSizeXXXL * 4 * scaling : Style.fontSizeXXXL * 5 * scaling
                   font.weight: Style.fontWeightBold
                   font.letterSpacing: -2 * scaling
                   color: Color.mOnSurface
                   horizontalAlignment: Text.AlignHCenter
+                  Layout.alignment: Qt.AlignHCenter
 
                   SequentialAnimation on scale {
                     loops: Animation.Infinite
@@ -194,32 +173,33 @@ Loader {
 
                 NText {
                   id: dateText
-                  text: Qt.formatDateTime(new Date(), "dddd, MMMM d")
+                  text: formatDate()
                   font.family: Settings.data.ui.fontBillboard
                   font.pointSize: Style.fontSizeXXL * scaling
                   font.weight: Font.Light
                   color: Color.mOnSurface
                   horizontalAlignment: Text.AlignHCenter
-                  width: timeText.width
+                  Layout.alignment: Qt.AlignHCenter
+                  Layout.preferredWidth: timeText.implicitWidth
                 }
               }
 
-              Column {
+              ColumnLayout {
                 spacing: Style.marginM * scaling
                 Layout.alignment: Qt.AlignHCenter
 
                 Rectangle {
-                  width: 108 * scaling
-                  height: 108 * scaling
+                  Layout.preferredWidth: 108 * scaling
+                  Layout.preferredHeight: 108 * scaling
+                  Layout.alignment: Qt.AlignHCenter
                   radius: width * 0.5
                   color: Color.transparent
                   border.color: Color.mPrimary
                   border.width: Math.max(1, Style.borderL * scaling)
-                  anchors.horizontalCenter: parent.horizontalCenter
                   z: 10
 
                   Loader {
-                    active: MediaService.isPlaying && Settings.data.audio.visualizerType == "linear"
+                    active: Settings.data.audio.visualizerType == "linear"
                     anchors.centerIn: parent
                     width: 160 * scaling
                     height: 160 * scaling
@@ -248,7 +228,7 @@ Loader {
                   }
 
                   Loader {
-                    active: MediaService.isPlaying && Settings.data.audio.visualizerType == "mirrored"
+                    active: Settings.data.audio.visualizerType == "mirrored"
                     anchors.centerIn: parent
                     width: 160 * scaling
                     height: 160 * scaling
@@ -256,12 +236,10 @@ Loader {
                       Repeater {
                         model: CavaService.values.length * 2
                         Rectangle {
-                          property int mirroredValueIndex: index < CavaService.values.length ? index : (CavaService.values.length
-                                                                                                        * 2 - 1 - index)
+                          property int mirroredValueIndex: index < CavaService.values.length ? index : (CavaService.values.length * 2 - 1 - index)
                           property real mirroredAngle: (index / (CavaService.values.length * 2)) * 2 * Math.PI
                           property real mirroredRadius: 70 * scaling
-                          property real mirroredBarLength: Math.max(
-                                                             2, CavaService.values[mirroredValueIndex] * 30 * scaling)
+                          property real mirroredBarLength: Math.max(2, CavaService.values[mirroredValueIndex] * 30 * scaling)
                           property real mirroredBarWidth: 3 * scaling
                           width: mirroredBarWidth
                           height: mirroredBarLength
@@ -280,7 +258,7 @@ Loader {
                   }
 
                   Loader {
-                    active: MediaService.isPlaying && Settings.data.audio.visualizerType == "wave"
+                    active: Settings.data.audio.visualizerType == "wave"
                     anchors.centerIn: parent
                     width: 160 * scaling
                     height: 160 * scaling
@@ -327,31 +305,6 @@ Loader {
                     }
                   }
 
-                  Rectangle {
-                    anchors.centerIn: parent
-                    width: parent.width + 24 * scaling
-                    height: parent.height + 24 * scaling
-                    radius: width * 0.5
-                    color: Color.transparent
-                    border.color: Qt.rgba(Color.mPrimary.r, Color.mPrimary.g, Color.mPrimary.b, 0.3)
-                    border.width: Math.max(1, Style.borderM * scaling)
-                    z: -1
-                    visible: !MediaService.isPlaying
-                    SequentialAnimation on scale {
-                      loops: Animation.Infinite
-                      NumberAnimation {
-                        to: 1.1
-                        duration: 1500
-                        easing.type: Easing.InOutQuad
-                      }
-                      NumberAnimation {
-                        to: 1.0
-                        duration: 1500
-                        easing.type: Easing.InOutQuad
-                      }
-                    }
-                  }
-
                   NImageCircled {
                     anchors.centerIn: parent
                     width: 100 * scaling
@@ -383,192 +336,208 @@ Loader {
               anchors.centerIn: parent
               anchors.verticalCenterOffset: 50 * scaling
 
-              Item {
-                width: parent.width
-                height: 280 * scaling
-                Layout.fillWidth: true
+              Rectangle {
+                id: terminalBackground
+                anchors.fill: parent
+                clip: true
+                radius: Style.radiusM * scaling
+                color: Qt.alpha(Color.mSurface, 0.9)
+                border.color: Color.mPrimary
+                border.width: Math.max(1, Style.borderM * scaling)
 
-                Rectangle {
-                  id: terminalBackground
-                  anchors.fill: parent
-                  radius: Style.radiusM * scaling
-                  color: Color.applyOpacity(Color.mSurface, "E6")
-                  border.color: Color.mPrimary
-                  border.width: Math.max(1, Style.borderM * scaling)
-
-                  Repeater {
-                    model: 20
-                    Rectangle {
-                      width: parent.width
-                      height: 1
-                      color: Color.applyOpacity(Color.mPrimary, "1A")
-                      y: index * 10 * scaling
-                      opacity: Style.opacityMedium
-                      SequentialAnimation on opacity {
-                        loops: Animation.Infinite
-                        NumberAnimation {
-                          to: 0.6
-                          duration: 2000 + Math.random() * 1000
-                        }
-                        NumberAnimation {
-                          to: 0.1
-                          duration: 2000 + Math.random() * 1000
-                        }
-                      }
-                    }
-                  }
-
+                Repeater {
+                  model: 20
                   Rectangle {
                     width: parent.width
-                    height: 40 * scaling
-                    color: Color.applyOpacity(Color.mPrimary, "33")
-                    topLeftRadius: Style.radiusS * scaling
-                    topRightRadius: Style.radiusS * scaling
+                    height: 1
+                    color: Qt.alpha(Color.mPrimary, 0.1)
+                    y: index * 10 * scaling
+                    opacity: Style.opacityMedium
+                    SequentialAnimation on opacity {
+                      loops: Animation.Infinite
+                      NumberAnimation {
+                        to: 0.6
+                        duration: 2000 + Math.random() * 1000
+                      }
+                      NumberAnimation {
+                        to: 0.1
+                        duration: 2000 + Math.random() * 1000
+                      }
+                    }
+                  }
+                }
+
+                Rectangle {
+                  width: parent.width
+                  height: 40 * scaling
+                  color: Qt.alpha(Color.mPrimary, 0.2)
+                  topLeftRadius: Style.radiusS * scaling
+                  topRightRadius: Style.radiusS * scaling
+
+                  RowLayout {
+                    anchors.fill: parent
+                    anchors.topMargin: Style.marginM * scaling
+                    anchors.bottomMargin: Style.marginM * scaling
+                    anchors.leftMargin: Style.marginL * scaling
+                    anchors.rightMargin: Style.marginL * scaling
+                    spacing: Style.marginL * scaling
+
+                    NText {
+                      text: "SECURE TERMINAL"
+                      color: Color.mOnSurface
+                      font.family: Settings.data.ui.fontFixed
+                      font.pointSize: Style.fontSizeL * scaling
+                      font.weight: Style.fontWeightBold
+                      Layout.fillWidth: true
+                    }
 
                     RowLayout {
-                      anchors.fill: parent
-                      anchors.topMargin: Style.marginM * scaling
-                      anchors.bottomMargin: Style.marginM * scaling
-                      anchors.leftMargin: Style.marginL * scaling
-                      anchors.rightMargin: Style.marginL * scaling
-                      spacing: Style.marginM * scaling
-
+                      spacing: Style.marginS * scaling
                       NText {
-                        text: "SECURE TERMINAL"
+                        text: keyboardLayout.currentLayout
                         color: Color.mOnSurface
                         font.family: Settings.data.ui.fontFixed
-                        font.pointSize: Style.fontSizeL * scaling
+                        font.pointSize: Style.fontSizeM * scaling
                         font.weight: Style.fontWeightBold
-                        Layout.fillWidth: true
                       }
-
-                      Row {
-                        spacing: Style.marginS * scaling
-                        visible: batteryIndicator.batteryVisible
-                        NIcon {
-                          text: batteryIndicator.getIcon()
-                          font.pointSize: Style.fontSizeM * scaling
-                          color: batteryIndicator.charging ? Color.mPrimary : Color.mOnSurface
-                        }
-                        NText {
-                          text: Math.round(batteryIndicator.percent) + "%"
-                          color: Color.mOnSurface
-                          font.family: Settings.data.ui.fontFixed
-                          font.pointSize: Style.fontSizeM * scaling
-                          font.weight: Style.fontWeightBold
-                        }
+                      NIcon {
+                        icon: "keyboard"
+                        font.pointSize: Style.fontSizeM * scaling
+                        color: Color.mOnSurface
                       }
+                    }
 
-                      Row {
-                        spacing: Style.marginS * scaling
-                        NText {
-                          text: keyboardLayout.currentLayout
-                          color: Color.mOnSurface
-                          font.family: Settings.data.ui.fontFixed
-                          font.pointSize: Style.fontSizeM * scaling
-                          font.weight: Style.fontWeightBold
-                        }
-                        NIcon {
-                          text: "keyboard_alt"
-                          font.pointSize: Style.fontSizeM * scaling
-                          color: Color.mOnSurface
+                    RowLayout {
+                      spacing: Style.marginS * scaling
+                      visible: batteryIndicator.batteryVisible
+                      NIcon {
+                        icon: BatteryService.getIcon(batteryIndicator.percent, batteryIndicator.charging, batteryIndicator.isReady)
+                        font.pointSize: Style.fontSizeM * scaling
+                        color: batteryIndicator.charging ? Color.mPrimary : Color.mOnSurface
+                        rotation: -90
+                      }
+                      NText {
+                        text: Math.round(batteryIndicator.percent) + "%"
+                        color: Color.mOnSurface
+                        font.family: Settings.data.ui.fontFixed
+                        font.pointSize: Style.fontSizeM * scaling
+                        font.weight: Style.fontWeightBold
+                      }
+                    }
+                  }
+                }
+
+                ColumnLayout {
+                  anchors.top: parent.top
+                  anchors.left: parent.left
+                  anchors.right: parent.right
+                  anchors.bottom: parent.bottom
+                  anchors.margins: Style.marginL * scaling
+                  anchors.topMargin: 70 * scaling
+                  spacing: Style.marginM * scaling
+
+                  RowLayout {
+                    Layout.fillWidth: true
+                    spacing: Style.marginM * scaling
+
+                    NText {
+                      text: Quickshell.env("USER") + "@noctalia:~$"
+                      color: Color.mPrimary
+                      font.family: Settings.data.ui.fontFixed
+                      font.pointSize: Style.fontSizeL * scaling
+                      font.weight: Style.fontWeightBold
+                    }
+
+                    NText {
+                      id: welcomeText
+                      text: ""
+                      color: Color.mOnSurface
+                      font.family: Settings.data.ui.fontFixed
+                      font.pointSize: Style.fontSizeL * scaling
+                      property int currentIndex: 0
+                      property string fullText: "Welcome back, " + Quickshell.env("USER") + "!"
+
+                      Timer {
+                        interval: Style.animationFast
+                        running: true
+                        repeat: true
+                        onTriggered: {
+                          if (parent.currentIndex < parent.fullText.length) {
+                            parent.text = parent.fullText.substring(0, parent.currentIndex + 1)
+                            parent.currentIndex++
+                          } else {
+                            running = false
+                          }
                         }
                       }
                     }
                   }
 
-                  ColumnLayout {
-                    anchors.top: parent.top
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.bottom: parent.bottom
-                    anchors.margins: Style.marginL * scaling
-                    anchors.topMargin: 70 * scaling
+                  RowLayout {
+                    Layout.fillWidth: true
                     spacing: Style.marginM * scaling
 
-                    RowLayout {
-                      Layout.fillWidth: true
-                      spacing: Style.marginM * scaling
+                    NText {
+                      text: Quickshell.env("USER") + "@noctalia:~$"
+                      color: Color.mPrimary
+                      font.family: Settings.data.ui.fontFixed
+                      font.pointSize: Style.fontSizeL * scaling
+                      font.weight: Style.fontWeightBold
+                    }
 
-                      NText {
-                        text: Quickshell.env("USER") + "@noctalia:~$"
-                        color: Color.mPrimary
-                        font.family: Settings.data.ui.fontFixed
-                        font.pointSize: Style.fontSizeL * scaling
-                        font.weight: Style.fontWeightBold
+                    NText {
+                      text: "sudo unlock-session"
+                      color: Color.mOnSurface
+                      font.family: Settings.data.ui.fontFixed
+                      font.pointSize: Style.fontSizeL * scaling
+                    }
+                  }
+
+                  RowLayout {
+                    Layout.fillWidth: true
+                    spacing: Style.marginM * scaling
+
+                    NText {
+                      text: "Password:"
+                      color: Color.mPrimary
+                      font.family: Settings.data.ui.fontFixed
+                      font.pointSize: Style.fontSizeL * scaling
+                      font.weight: Style.fontWeightBold
+                    }
+
+                    TextInput {
+                      id: passwordInput
+                      width: 0
+                      height: 0
+                      visible: false
+                      enabled: !lockContext.unlockInProgress
+                      font.family: Settings.data.ui.fontFixed
+                      font.pointSize: Style.fontSizeL * scaling
+                      color: Color.mOnSurface
+                      echoMode: TextInput.Password
+                      passwordCharacter: "*"
+                      passwordMaskDelay: 0
+
+                      text: lockContext.currentText
+                      onTextChanged: {
+                        lockContext.currentText = text
                       }
 
-                      NText {
-                        id: welcomeText
-                        text: ""
-                        color: Color.mOnSurface
-                        font.family: Settings.data.ui.fontFixed
-                        font.pointSize: Style.fontSizeL * scaling
-                        property int currentIndex: 0
-                        property string fullText: "Welcome back, " + Quickshell.env("USER") + "!"
-
-                        Timer {
-                          interval: Style.animationFast
-                          running: true
-                          repeat: true
-                          onTriggered: {
-                            if (parent.currentIndex < parent.fullText.length) {
-                              parent.text = parent.fullText.substring(0, parent.currentIndex + 1)
-                              parent.currentIndex++
-                            } else {
-                              running = false
-                            }
-                          }
+                      Keys.onPressed: function (event) {
+                        if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                          lockContext.tryUnlock()
                         }
+                      }
+
+                      Component.onCompleted: {
+                        forceActiveFocus()
                       }
                     }
 
-                    RowLayout {
+                    // Container for asterisks and cursor to control positioning
+                    Item {
                       Layout.fillWidth: true
-                      spacing: Style.marginM * scaling
-
-                      NText {
-                        text: Quickshell.env("USER") + "@noctalia:~$"
-                        color: Color.mPrimary
-                        font.family: Settings.data.ui.fontFixed
-                        font.pointSize: Style.fontSizeL * scaling
-                        font.weight: Style.fontWeightBold
-                      }
-
-                      NText {
-                        text: "sudo unlock-session"
-                        color: Color.mOnSurface
-                        font.family: Settings.data.ui.fontFixed
-                        font.pointSize: Style.fontSizeL * scaling
-                      }
-
-                      TextInput {
-                        id: passwordInput
-                        width: 0
-                        height: 0
-                        visible: false
-                        font.family: Settings.data.ui.fontFixed
-                        font.pointSize: Style.fontSizeL * scaling
-                        color: Color.mOnSurface
-                        echoMode: TextInput.Password
-                        passwordCharacter: "*"
-                        passwordMaskDelay: 0
-
-                        text: lockContext.currentText
-                        onTextChanged: {
-                          lockContext.currentText = text
-                        }
-
-                        Keys.onPressed: function (event) {
-                          if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-                            lockContext.tryUnlock()
-                          }
-                        }
-
-                        Component.onCompleted: {
-                          forceActiveFocus()
-                        }
-                      }
+                      Layout.preferredHeight: asterisksText.implicitHeight
 
                       NText {
                         id: asterisksText
@@ -576,7 +545,12 @@ Loader {
                         color: Color.mOnSurface
                         font.family: Settings.data.ui.fontFixed
                         font.pointSize: Style.fontSizeL * scaling
-                        visible: passwordInput.activeFocus
+                        visible: passwordInput.activeFocus && !lockContext.unlockInProgress
+                        anchors.left: parent.left
+                        anchors.verticalCenter: parent.verticalCenter
+                        wrapMode: Text.NoWrap
+                        maximumLineCount: 1
+                        elide: Text.ElideRight
 
                         SequentialAnimation {
                           id: typingEffect
@@ -600,8 +574,9 @@ Loader {
                         height: 20 * scaling
                         color: Color.mPrimary
                         visible: passwordInput.activeFocus
-                        Layout.leftMargin: -Style.marginS * scaling
-                        Layout.alignment: Qt.AlignVCenter
+                        anchors.left: asterisksText.right
+                        anchors.leftMargin: Style.marginXS * scaling
+                        anchors.verticalCenter: parent.verticalCenter
 
                         SequentialAnimation on opacity {
                           loops: Animation.Infinite
@@ -616,155 +591,324 @@ Loader {
                         }
                       }
                     }
+                  }
 
-                    NText {
-                      text: {
-                        if (lockContext.unlockInProgress)
-                          return "Authenticating..."
-                        if (lockContext.showFailure && lockContext.errorMessage)
-                          return lockContext.errorMessage
-                        if (lockContext.showFailure)
-                          return "Authentication failed."
-                        return ""
-                      }
-                      color: {
-                        if (lockContext.unlockInProgress)
-                          return Color.mPrimary
-                        if (lockContext.showFailure)
-                          return Color.mError
-                        return Color.transparent
-                      }
-                      font.family: "DejaVu Sans Mono"
-                      font.pointSize: Style.fontSizeL * scaling
-                      Layout.fillWidth: true
-
-                      SequentialAnimation on opacity {
-                        running: lockContext.unlockInProgress
-                        loops: Animation.Infinite
-                        NumberAnimation {
-                          to: 1.0
-                          duration: 800
-                        }
-                        NumberAnimation {
-                          to: 0.5
-                          duration: 800
-                        }
-                      }
+                  NText {
+                    text: {
+                      if (lockContext.unlockInProgress)
+                        return lockContext.infoMessage || "Authenticating..."
+                      if (lockContext.showFailure && lockContext.errorMessage)
+                        return lockContext.errorMessage
+                      if (lockContext.showFailure)
+                        return "Authentication failed."
+                      return ""
                     }
+                    color: {
+                      if (lockContext.unlockInProgress)
+                        return Color.mPrimary
+                      if (lockContext.showFailure)
+                        return Color.mError
+                      return Color.transparent
+                    }
+                    font.family: "DejaVu Sans Mono"
+                    font.pointSize: Style.fontSizeL * scaling
+                    Layout.fillWidth: true
 
-                    Row {
-                      Layout.alignment: Qt.AlignRight
-                      Layout.bottomMargin: -10 * scaling
-                      Rectangle {
-                        width: 120 * scaling
-                        height: 40 * scaling
-                        radius: Style.radiusS * scaling
-                        color: executeButtonArea.containsMouse ? Color.mPrimary : Color.applyOpacity(Color.mPrimary,
-                                                                                                     "33")
-                        border.color: Color.mPrimary
-                        border.width: Math.max(1, Style.borderS * scaling)
-                        enabled: !lockContext.unlockInProgress
-
-                        NText {
-                          anchors.centerIn: parent
-                          text: lockContext.unlockInProgress ? "EXECUTING" : "EXECUTE"
-                          color: executeButtonArea.containsMouse ? Color.mOnPrimary : Color.mPrimary
-                          font.family: Settings.data.ui.fontFixed
-                          font.pointSize: Style.fontSizeM * scaling
-                          font.weight: Style.fontWeightBold
-                        }
-
-                        MouseArea {
-                          id: executeButtonArea
-                          anchors.fill: parent
-                          hoverEnabled: true
-                          onClicked: {
-                            lockContext.tryUnlock()
-                          }
-
-                          SequentialAnimation on scale {
-                            running: executeButtonArea.containsMouse
-                            NumberAnimation {
-                              to: 1.05
-                              duration: Style.animationFast
-                              easing.type: Easing.OutCubic
-                            }
-                          }
-
-                          SequentialAnimation on scale {
-                            running: !executeButtonArea.containsMouse
-                            NumberAnimation {
-                              to: 1.0
-                              duration: Style.animationFast
-                              easing.type: Easing.OutCubic
-                            }
-                          }
-                        }
-
-                        SequentialAnimation on scale {
-                          loops: Animation.Infinite
-                          running: lockContext.unlockInProgress
-                          NumberAnimation {
-                            to: 1.02
-                            duration: 600
-                            easing.type: Easing.InOutQuad
-                          }
-                          NumberAnimation {
-                            to: 1.0
-                            duration: 600
-                            easing.type: Easing.InOutQuad
-                          }
-                        }
+                    SequentialAnimation on opacity {
+                      running: lockContext.unlockInProgress
+                      loops: Animation.Infinite
+                      NumberAnimation {
+                        to: 1.0
+                        duration: 800
+                      }
+                      NumberAnimation {
+                        to: 0.5
+                        duration: 800
                       }
                     }
                   }
 
-                  Rectangle {
-                    anchors.fill: parent
-                    radius: parent.radius
-                    color: Color.transparent
-                    border.color: Color.applyOpacity(Color.mPrimary, "4D")
-                    border.width: Math.max(1, Style.borderS * scaling)
-                    z: -1
+                  RowLayout {
+                    Layout.alignment: Qt.AlignRight
+                    Layout.bottomMargin: -10 * scaling
+                    Layout.fillWidth: true
+                    Rectangle {
+                      Layout.preferredWidth: 120 * scaling
+                      Layout.preferredHeight: 40 * scaling
+                      radius: Style.radiusS * scaling
+                      color: executeButtonArea.containsMouse ? Color.mPrimary : Qt.alpha(Color.mPrimary, 0.2)
+                      border.color: Color.mPrimary
+                      border.width: Math.max(1, Style.borderS * scaling)
+                      enabled: !lockContext.unlockInProgress
 
-                    SequentialAnimation on opacity {
-                      loops: Animation.Infinite
-                      NumberAnimation {
-                        to: 0.6
-                        duration: 2000
-                        easing.type: Easing.InOutQuad
+                      NText {
+                        anchors.centerIn: parent
+                        text: lockContext.unlockInProgress ? "EXECUTING" : "EXECUTE"
+                        color: executeButtonArea.containsMouse ? Color.mOnPrimary : Color.mPrimary
+                        font.family: Settings.data.ui.fontFixed
+                        font.pointSize: Style.fontSizeM * scaling
+                        font.weight: Style.fontWeightBold
                       }
-                      NumberAnimation {
-                        to: 0.2
-                        duration: 2000
-                        easing.type: Easing.InOutQuad
+
+                      MouseArea {
+                        id: executeButtonArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        onClicked: {
+                          lockContext.tryUnlock()
+                        }
+
+                        SequentialAnimation on scale {
+                          running: executeButtonArea.containsMouse
+                          NumberAnimation {
+                            to: 1.05
+                            duration: Style.animationFast
+                            easing.type: Easing.OutCubic
+                          }
+                        }
+
+                        SequentialAnimation on scale {
+                          running: !executeButtonArea.containsMouse
+                          NumberAnimation {
+                            to: 1.0
+                            duration: Style.animationFast
+                            easing.type: Easing.OutCubic
+                          }
+                        }
                       }
+
+                      SequentialAnimation on scale {
+                        loops: Animation.Infinite
+                        running: lockContext.unlockInProgress
+                        NumberAnimation {
+                          to: 1.02
+                          duration: 600
+                          easing.type: Easing.InOutQuad
+                        }
+                        NumberAnimation {
+                          to: 1.0
+                          duration: 600
+                          easing.type: Easing.InOutQuad
+                        }
+                      }
+                    }
+                  }
+                }
+
+                Rectangle {
+                  anchors.fill: parent
+                  radius: parent.radius
+                  color: Color.transparent
+                  border.color: Qt.alpha(Color.mPrimary, 0.3)
+                  border.width: Math.max(1, Style.borderS * scaling)
+                  z: -1
+
+                  SequentialAnimation on opacity {
+                    loops: Animation.Infinite
+                    NumberAnimation {
+                      to: 0.6
+                      duration: 2000
+                      easing.type: Easing.InOutQuad
+                    }
+                    NumberAnimation {
+                      to: 0.2
+                      duration: 2000
+                      easing.type: Easing.InOutQuad
                     }
                   }
                 }
               }
             }
 
-            // Power buttons at bottom
-            Row {
+            // ALARMING Easter Egg for long passwords
+            Item {
+              id: easterEggContainer
+              anchors.fill: parent
+              z: 1000
+
+              property bool easterEggTriggered: false
+
+              // Monitor password length
+              Connections {
+                target: passwordInput
+                function onTextChanged() {
+                  if (passwordInput.text.length >= 25) {
+                    easterEggContainer.easterEggTriggered = true
+                  }
+                }
+                function onActiveFocusChanged() {
+                  if (!passwordInput.activeFocus) {
+                    easterEggContainer.easterEggTriggered = false
+                  }
+                }
+              }
+
+              // Also reset when authentication starts
+              Connections {
+                target: lockContext
+                function onUnlockInProgressChanged() {
+                  if (lockContext.unlockInProgress) {
+                    easterEggContainer.easterEggTriggered = false
+                  }
+                }
+              }
+
+              // Scattered warning messages (game-style pop-ups)
+              Repeater {
+                model: easterEggContainer.easterEggTriggered && passwordInput.activeFocus && !lockContext.unlockInProgress ? 12 : 0
+
+                NText {
+                  property var messages: ["BREACH DETECTED", "SECURITY ALERT", "SYSTEM COMPROMISED", "ANOMALY DETECTED", "FIREWALL BREACH", "DEFENSE FAILING", "16 // 16 // 16", "THE ATLAS SEES ALL", "SIMULATION DETECTED", "WAKE UP", "16 16 16 16 16", "KZZT... 16... KZZT", "ERROR ERROR ERROR", "THEY'RE WATCHING", "16 MINUTES REMAIN"]
+
+                  property real baseX: Math.random() * (parent.width - 300)
+                  property real baseY: Math.random() * (parent.height - 80)
+
+                  text: messages[index % messages.length]
+                  color: Color.mError
+                  font.family: Settings.data.ui.fontFixed
+                  font.pointSize: Style.fontSizeXXL * scaling
+                  font.weight: Style.fontWeightBold
+
+                  x: baseX
+                  y: baseY
+
+                  // Better random positioning avoiding center terminal
+                  Component.onCompleted: {
+                    var centerX = parent.width / 2
+                    var centerY = parent.height / 2
+                    var avoidRadius = 350 * scaling
+
+                    // If too close to center, push to random edge zones
+                    var distanceFromCenter = Math.sqrt((x - centerX) * (x - centerX) + (y - centerY) * (y - centerY))
+                    if (distanceFromCenter < avoidRadius) {
+                      // Pick a random edge zone
+                      var zone = Math.floor(Math.random() * 4)
+                      switch (zone) {
+                      case 0:
+                        // Top
+                        x = Math.random() * parent.width
+                        y = Math.random() * 100 * scaling
+                        break
+                      case 1:
+                        // Right
+                        x = parent.width - (50 + Math.random() * 200) * scaling
+                        y = Math.random() * parent.height
+                        break
+                      case 2:
+                        // Bottom
+                        x = Math.random() * parent.width
+                        y = parent.height - (50 + Math.random() * 100) * scaling
+                        break
+                      case 3:
+                        // Left
+                        x = Math.random() * 200 * scaling
+                        y = Math.random() * parent.height
+                        break
+                      }
+                    }
+
+                    // Add some random drift to make positioning more varied
+                    x += (Math.random() - 0.5) * 100 * scaling
+                    y += (Math.random() - 0.5) * 50 * scaling
+
+                    // Ensure we stay within bounds
+                    x = Math.max(20 * scaling, Math.min(parent.width - 280 * scaling, x))
+                    y = Math.max(20 * scaling, Math.min(parent.height - 60 * scaling, y))
+                  }
+
+                  // Simple pop-in animation
+                  SequentialAnimation on scale {
+                    loops: Animation.Infinite
+                    PauseAnimation {
+                      duration: index * 400 + Math.random() * 1000
+                    }
+                    NumberAnimation {
+                      from: 0
+                      to: 1.2
+                      duration: 300
+                      easing.type: Easing.OutBack
+                    }
+                    NumberAnimation {
+                      to: 1.0
+                      duration: 200
+                    }
+                    PauseAnimation {
+                      duration: 2000 + Math.random() * 3000
+                    }
+                    NumberAnimation {
+                      to: 0
+                      duration: 300
+                    }
+                    PauseAnimation {
+                      duration: 800 + Math.random() * 1200
+                    }
+                  }
+
+                  // Gentle blinking effect
+                  SequentialAnimation on opacity {
+                    loops: Animation.Infinite
+                    PauseAnimation {
+                      duration: index * 200
+                    }
+                    NumberAnimation {
+                      to: 0.6
+                      duration: 400 + Math.random() * 300
+                    }
+                    NumberAnimation {
+                      to: 1.0
+                      duration: 300 + Math.random() * 200
+                    }
+                  }
+                }
+              }
+            }
+
+            // Power buttons at bottom right
+            RowLayout {
               anchors.right: parent.right
               anchors.bottom: parent.bottom
               anchors.margins: 50 * scaling
               spacing: 20 * scaling
 
+              // Shutdown
               Rectangle {
-                width: 60 * scaling
-                height: 60 * scaling
+                Layout.preferredWidth: iconPower.implicitWidth + Style.marginXL * scaling
+                Layout.preferredHeight: Layout.preferredWidth
                 radius: width * 0.5
-                color: powerButtonArea.containsMouse ? Color.mError : Color.applyOpacity(Color.mError, "33")
+                color: powerButtonArea.containsMouse ? Color.mError : Qt.alpha(Color.mError, 0.2)
                 border.color: Color.mError
                 border.width: Math.max(1, Style.borderM * scaling)
 
                 NIcon {
+                  id: iconPower
                   anchors.centerIn: parent
-                  text: "power_settings_new"
-                  font.pointSize: Style.fontSizeXL * scaling
+                  icon: "shutdown"
+                  font.pointSize: Style.fontSizeXXXL * scaling
                   color: powerButtonArea.containsMouse ? Color.mOnError : Color.mError
+                }
+
+                // Tooltip (inline rectangle to avoid separate Window during lock)
+                Rectangle {
+                  anchors.horizontalCenter: parent.horizontalCenter
+                  anchors.bottom: parent.top
+                  anchors.bottomMargin: Style.marginM * scaling
+                  radius: Style.radiusM * scaling
+                  color: Color.mSurface
+                  border.color: Color.mOutline
+                  border.width: Math.max(1, Style.borderS * scaling)
+                  visible: powerButtonArea.containsMouse
+                  z: 1
+                  NText {
+                    id: shutdownTooltipText
+                    anchors.margins: Style.marginM * scaling
+                    anchors.fill: parent
+                    text: "Shut down"
+                    font.pointSize: Style.fontSizeM * scaling
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                  }
+                  implicitWidth: shutdownTooltipText.implicitWidth + Style.marginM * 2 * scaling
+                  implicitHeight: shutdownTooltipText.implicitHeight + Style.marginM * 2 * scaling
                 }
 
                 MouseArea {
@@ -777,19 +921,45 @@ Loader {
                 }
               }
 
+              // Reboot
               Rectangle {
-                width: 60 * scaling
-                height: 60 * scaling
+                Layout.preferredWidth: iconReboot.implicitWidth + Style.marginXL * scaling
+                Layout.preferredHeight: Layout.preferredWidth
                 radius: width * 0.5
-                color: restartButtonArea.containsMouse ? Color.mPrimary : Color.applyOpacity(Color.mPrimary, "33")
+                color: restartButtonArea.containsMouse ? Color.mPrimary : Qt.alpha(Color.mPrimary, Style.opacityLight)
                 border.color: Color.mPrimary
                 border.width: Math.max(1, Style.borderM * scaling)
 
                 NIcon {
+                  id: iconReboot
                   anchors.centerIn: parent
-                  text: "restart_alt"
-                  font.pointSize: Style.fontSizeXL * scaling
+                  icon: "reboot"
+                  font.pointSize: Style.fontSizeXXXL * scaling
                   color: restartButtonArea.containsMouse ? Color.mOnPrimary : Color.mPrimary
+                }
+
+                // Tooltip
+                Rectangle {
+                  anchors.horizontalCenter: parent.horizontalCenter
+                  anchors.bottom: parent.top
+                  anchors.bottomMargin: Style.marginM * scaling
+                  radius: Style.radiusM * scaling
+                  color: Color.mSurface
+                  border.color: Color.mOutline
+                  border.width: Math.max(1, Style.borderS * scaling)
+                  visible: restartButtonArea.containsMouse
+                  z: 1
+                  NText {
+                    id: restartTooltipText
+                    anchors.margins: Style.marginM * scaling
+                    anchors.fill: parent
+                    text: "Restart"
+                    font.pointSize: Style.fontSizeM * scaling
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                  }
+                  implicitWidth: restartTooltipText.implicitWidth + Style.marginM * 2 * scaling
+                  implicitHeight: restartTooltipText.implicitHeight + Style.marginM * 2 * scaling
                 }
 
                 MouseArea {
@@ -799,22 +969,49 @@ Loader {
                   onClicked: {
                     CompositorService.reboot()
                   }
+                  // Tooltip handled via inline rectangle visibility
                 }
               }
 
+              // Suspend
               Rectangle {
-                width: 60 * scaling
-                height: 60 * scaling
+                Layout.preferredWidth: iconSuspend.implicitWidth + Style.marginXL * scaling
+                Layout.preferredHeight: Layout.preferredWidth
                 radius: width * 0.5
-                color: suspendButtonArea.containsMouse ? Color.mSecondary : Color.applyOpacity(Color.mSecondary, "33")
+                color: suspendButtonArea.containsMouse ? Color.mSecondary : Qt.alpha(Color.mSecondary, 0.2)
                 border.color: Color.mSecondary
                 border.width: Math.max(1, Style.borderM * scaling)
 
                 NIcon {
+                  id: iconSuspend
                   anchors.centerIn: parent
-                  text: "bedtime"
-                  font.pointSize: Style.fontSizeXL * scaling
+                  icon: "suspend"
+                  font.pointSize: Style.fontSizeXXXL * scaling
                   color: suspendButtonArea.containsMouse ? Color.mOnSecondary : Color.mSecondary
+                }
+
+                // Tooltip
+                Rectangle {
+                  anchors.horizontalCenter: parent.horizontalCenter
+                  anchors.bottom: parent.top
+                  anchors.bottomMargin: Style.marginM * scaling
+                  radius: Style.radiusM * scaling
+                  color: Color.mSurface
+                  border.color: Color.mOutline
+                  border.width: Math.max(1, Style.borderS * scaling)
+                  visible: suspendButtonArea.containsMouse
+                  z: 1
+                  NText {
+                    id: suspendTooltipText
+                    anchors.margins: Style.marginM * scaling
+                    anchors.fill: parent
+                    text: "Suspend"
+                    font.pointSize: Style.fontSizeM * scaling
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                  }
+                  implicitWidth: suspendTooltipText.implicitWidth + Style.marginM * 2 * scaling
+                  implicitHeight: suspendTooltipText.implicitHeight + Style.marginM * 2 * scaling
                 }
 
                 MouseArea {
@@ -824,6 +1021,7 @@ Loader {
                   onClicked: {
                     CompositorService.suspend()
                   }
+                  // Tooltip handled via inline rectangle visibility
                 }
               }
             }
@@ -834,8 +1032,8 @@ Loader {
             running: true
             repeat: true
             onTriggered: {
-              timeText.text = Qt.formatDateTime(new Date(), "HH:mm")
-              dateText.text = Qt.formatDateTime(new Date(), "dddd, MMMM d")
+              timeText.text = formatTime()
+              dateText.text = formatDate()
             }
           }
         }

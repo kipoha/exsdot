@@ -45,7 +45,7 @@ Singleton {
 
       property string version: "Unknown"
       property var contributors: []
-      property double timestamp: 0
+      property real timestamp: 0
     }
   }
 
@@ -149,8 +149,7 @@ Singleton {
           Logger.log("GitHub", "Raw contributors response length:", response ? response.length : 0)
           if (response && response.trim()) {
             const data = JSON.parse(response)
-            Logger.log("GitHub", "Parsed contributors data type:", typeof data, "length:",
-                       Array.isArray(data) ? data.length : "not array")
+            Logger.log("GitHub", "Parsed contributors data type:", typeof data, "length:", Array.isArray(data) ? data.length : "not array")
             root.data.contributors = data || []
             root.contributors = root.data.contributors
             Logger.log("GitHub", "Contributors fetched from GitHub:", root.contributors.length)

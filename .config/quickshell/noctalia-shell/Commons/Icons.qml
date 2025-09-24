@@ -1,54 +1,85 @@
 pragma Singleton
 
 import QtQuick
+import QtQuick.Controls
 import Quickshell
-import qs.Services
+import qs.Commons
 
 Singleton {
-  id: icons
+  id: root
 
-  function iconFromName(iconName, fallbackName) {
-    const fallback = fallbackName || "application-x-executable"
-    try {
-      if (iconName && typeof Quickshell !== 'undefined' && Quickshell.iconPath) {
-        const p = Quickshell.iconPath(iconName, fallback)
-        if (p && p !== "")
-          return p
+  // Expose the font family name for easy access
+  readonly property string fontFamily: currentFontLoader ? currentFontLoader.name : ""
+  readonly property string defaultIcon: TablerIcons.defaultIcon
+  readonly property var icons: TablerIcons.icons
+  readonly property var aliases: TablerIcons.aliases
+  readonly property string fontPath: "/Assets/Fonts/tabler/tabler-icons.ttf"
+
+  // Current active font loader
+  property FontLoader currentFontLoader: null
+  property int fontVersion: 0
+
+  // Create a unique cache-busting path
+  readonly property string cacheBustingPath: Quickshell.shellDir + fontPath + "?v=" + fontVersion + "&t=" + Date.now()
+
+  // Signal emitted when font is reloaded
+  signal fontReloaded
+
+  Component.onCompleted: {
+    Logger.log("Icons", "Service started")
+    loadFontWithCacheBusting()
+  }
+
+  Connections {
+    target: Quickshell
+    function onReloadCompleted() {
+      Logger.log("Icons", "Quickshell reload completed - forcing font reload")
+      reloadFont()
+    }
+  }
+
+  // ---------------------------------------
+  function get(iconName) {
+    // Check in aliases first
+    if (aliases[iconName] !== undefined) {
+      iconName = aliases[iconName]
+    }
+
+    // Find the appropriate codepoint
+    return icons[iconName]
+  }
+
+  function loadFontWithCacheBusting() {
+    Logger.log("Icons", "Loading font with cache busting:", cacheBustingPath)
+
+    // Destroy old loader first
+    if (currentFontLoader) {
+      currentFontLoader.destroy()
+      currentFontLoader = null
+    }
+
+    // Create new loader with cache-busting URL
+    currentFontLoader = Qt.createQmlObject(`
+                                           import QtQuick
+                                           FontLoader {
+                                           source: "${cacheBustingPath}"
+                                           }
+                                           `, root, "dynamicFontLoader_" + fontVersion)
+
+    // Connect to the new loader's status changes
+    currentFontLoader.statusChanged.connect(function () {
+      if (currentFontLoader.status === FontLoader.Ready) {
+        Logger.log("Icons", "Font loaded successfully:", currentFontLoader.name, "(version " + fontVersion + ")")
+        fontReloaded()
+      } else if (currentFontLoader.status === FontLoader.Error) {
+        Logger.error("Icons", "Font failed to load (version " + fontVersion + ")")
       }
-    } catch (e) {
-
-      // ignore and fall back
-    }
-    try {
-      return Quickshell.iconPath ? (Quickshell.iconPath(fallback, true) || "") : ""
-    } catch (e2) {
-      return ""
-    }
+    })
   }
 
-  // Resolve icon path for a DesktopEntries appId - safe on missing entries
-  function iconForAppId(appId, fallbackName) {
-    const fallback = fallbackName || "application-x-executable"
-    if (!appId)
-      return iconFromName(fallback, fallback)
-    try {
-      if (typeof DesktopEntries === 'undefined' || !DesktopEntries.byId)
-        return iconFromName(fallback, fallback)
-      const entry = (DesktopEntries.heuristicLookup) ? DesktopEntries.heuristicLookup(
-                                                         appId) : DesktopEntries.byId(appId)
-      const name = entry && entry.icon ? entry.icon : ""
-      return iconFromName(name || fallback, fallback)
-    } catch (e) {
-      return iconFromName(fallback, fallback)
-    }
-  }
-
-  // Distro logo helper (absolute path or empty string)
-  function distroLogoPath() {
-    try {
-      return (typeof OSInfo !== 'undefined' && OSInfo.distroIconPath) ? OSInfo.distroIconPath : ""
-    } catch (e) {
-      return ""
-    }
+  function reloadFont() {
+    Logger.log("Icons", "Forcing font reload...")
+    fontVersion++
+    loadFontWithCacheBusting()
   }
 }

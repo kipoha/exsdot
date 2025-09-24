@@ -3,7 +3,7 @@ import qs.services
 import qs.components
 import qs.config
 
-Rectangle {
+StyledRect {
     id: processItem
 
     property var process: null
@@ -76,7 +76,7 @@ Rectangle {
             anchors.verticalCenter: parent.verticalCenter
         }
 
-        Rectangle {
+        StyledRect {
             id: cpuBadge
 
             width: 80
@@ -113,7 +113,7 @@ Rectangle {
             }
         }
 
-        Rectangle {
+        StyledRect {
             id: memoryBadge
 
             width: 80
@@ -163,7 +163,7 @@ Rectangle {
             anchors.verticalCenter: parent.verticalCenter
         }
 
-        Rectangle {
+        StyledRect {
             id: menuButton
 
             width: 28

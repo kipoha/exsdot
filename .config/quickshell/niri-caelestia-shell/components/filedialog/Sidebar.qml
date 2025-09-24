@@ -48,7 +48,7 @@ StyledRect {
                 implicitHeight: placeInner.implicitHeight + Appearance.padding.normal * 2
 
                 radius: Appearance.rounding.full
-                color: selected ? Colours.palette.m3secondaryContainer : "transparent"
+                color: Qt.alpha(Colours.palette.m3secondaryContainer, selected ? 1 : 0)
 
                 StateLayer {
                     color: place.selected ? Colours.palette.m3onSecondaryContainer : Colours.palette.m3onSurface
@@ -95,11 +95,7 @@ StyledRect {
                         fill: place.selected ? 1 : 0
 
                         Behavior on fill {
-                            NumberAnimation {
-                                duration: Appearance.anim.durations.normal
-                                easing.type: Easing.BezierSpline
-                                easing.bezierCurve: Appearance.anim.curves.standard
-                            }
+                            Anim {}
                         }
                     }
 

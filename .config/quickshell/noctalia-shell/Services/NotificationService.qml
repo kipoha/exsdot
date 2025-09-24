@@ -1,247 +1,405 @@
 pragma Singleton
 
 import QtQuick
+import QtQuick.Window
 import Quickshell
 import Quickshell.Io
+import Quickshell.Services.Notifications
 import qs.Commons
 import qs.Services
-import Quickshell.Services.Notifications
+import "../Helpers/sha256.js" as Checksum
 
 Singleton {
   id: root
 
-  // Notification server instance
-  property NotificationServer server: NotificationServer {
-    id: notificationServer
+  // Configuration
+  property int maxVisible: 5
+  property int maxHistory: 100
+  property string historyFile: Quickshell.env("NOCTALIA_NOTIF_HISTORY_FILE") || (Settings.cacheDir + "notifications.json")
 
-    // Server capabilities
+  // Models
+  property ListModel activeList: ListModel {}
+  property ListModel historyList: ListModel {}
+
+  // Internal state
+  property var activeMap: ({})
+  property var imageQueue: []
+  property var progressTimers: ({})
+
+  // Simple image cacher
+  PanelWindow {
+    implicitHeight: 1
+    implicitWidth: 1
+    color: "transparent"
+    mask: Region {}
+
+    Image {
+      id: cacher
+      width: 64
+      height: 64
+      visible: true
+      cache: false
+      asynchronous: true
+      mipmap: true
+      antialiasing: true
+
+      onStatusChanged: {
+        if (imageQueue.length === 0)
+        return
+        const req = imageQueue[0]
+
+        if (status === Image.Ready) {
+          Logger.log("Notification", "Caching image to:", req.dest)
+          Quickshell.execDetached(["mkdir", "-p", Settings.cacheDirImagesNotifications])
+          grabToImage(result => {
+                        if (result.saveToFile(req.dest))
+                        updateImagePath(req.imageId, req.dest)
+                        processNextImage()
+                      })
+        } else if (status === Image.Error) {
+          processNextImage()
+        }
+      }
+
+      function processNextImage() {
+        imageQueue.shift()
+        if (imageQueue.length > 0) {
+          source = imageQueue[0].src
+        } else {
+          source = ""
+        }
+      }
+    }
+  }
+
+  // Notification server
+  NotificationServer {
     keepOnReload: false
     imageSupported: true
     actionsSupported: true
-    actionIconsSupported: true
-    bodyMarkupSupported: true
-    bodySupported: true
-    persistenceSupported: true
-    inlineReplySupported: true
-    bodyHyperlinksSupported: true
-    bodyImagesSupported: true
+    onNotification: notification => handleNotification(notification)
+  }
 
-    // Signal when notification is received
-    onNotification: function (notification) {
+  // Main handler
+  function handleNotification(notification) {
+    const data = createData(notification)
+    addToHistory(data)
 
-      // Check if notifications are suppressed
-      if (Settings.data.notifications && Settings.data.notifications.suppressed) {
-        // Still add to history but don't show notification
-        root.addToHistory(notification)
-        return
-      }
+    if (Settings.data.notifications?.doNotDisturb)
+      return
 
-      // Track the notification
-      notification.tracked = true
+    activeMap[data.id] = notification
+    notification.tracked = true
+    notification.closed.connect(() => removeActive(data.id))
 
-      // Connect to closed signal for cleanup
-      notification.closed.connect(function () {
-        root.removeNotification(notification)
-      })
-
-      // Add to our model
-      root.addNotification(notification)
-      // Also add to history
-      root.addToHistory(notification)
+    activeList.insert(0, data)
+    while (activeList.count > maxVisible) {
+      const last = activeList.get(activeList.count - 1)
+      activeMap[last.id]?.dismiss()
+      activeList.remove(activeList.count - 1)
     }
   }
 
-  // List model to hold notifications
-  property ListModel notificationModel: ListModel {}
+  function createData(n) {
+    const time = new Date()
+    const id = Checksum.sha256(JSON.stringify({
+                                                "summary": n.summary,
+                                                "body": n.body,
+                                                "app": n.appName,
+                                                "time": time.getTime()
+                                              }))
 
-  // Persistent history of notifications (most recent first)
-  property ListModel historyModel: ListModel {}
-  property int maxHistory: 100
+    const image = n.image || getIcon(n.appIcon)
+    const imageId = generateImageId(n, image)
+    queueImage(image, imageId)
 
-  // Cached history file path
-  property string historyFile: Quickshell.env("NOCTALIA_NOTIF_HISTORY_FILE")
-                               || (Settings.cacheDir + "notifications.json")
+    return {
+      "id": id,
+      "summary": (n.summary || ""),
+      "body": stripTags(n.body || ""),
+      "appName": getAppName(n.appName),
+      "urgency": n.urgency < 0 || n.urgency > 2 ? 1 : n.urgency,
+      "expireTimeout": n.expireTimeout,
+      "timestamp": time,
+      "progress": 1.0,
+      "originalImage": image,
+      "cachedImage": imageId ? (Settings.cacheDirImagesNotifications + imageId + ".png") : image,
+      "actionsJson": JSON.stringify((n.actions || []).map(a => ({
+                                                                  "text": a.text || "Action",
+                                                                  "identifier": a.identifier || ""
+                                                                })))
+    }
+  }
 
-  // Persisted storage for history
-  property FileView historyFileView: FileView {
-    id: historyFileView
-    objectName: "notificationHistoryFileView"
-    path: historyFile
-    watchChanges: true
-    onFileChanged: reload()
-    onAdapterUpdated: writeAdapter()
-    Component.onCompleted: reload()
-    onLoaded: loadFromHistory()
-    onLoadFailed: function (error) {
-      // Create file on first use
-      if (error.toString().includes("No such file") || error === 2) {
-        writeAdapter()
+  function queueImage(path, imageId) {
+    if (!path || !path.startsWith("image://") || !imageId)
+      return
+
+    const dest = Settings.cacheDirImagesNotifications + imageId + ".png"
+
+    // Skip if already queued
+    for (const req of imageQueue) {
+      if (req.imageId === imageId)
+        return
+    }
+
+    imageQueue.push({
+                      "src": path,
+                      "dest": dest,
+                      "imageId": imageId
+                    })
+
+    // If we have a single item in the queue, process it immediately
+    if (imageQueue.length === 1)
+      cacher.source = path
+  }
+
+  function updateImagePath(id, path) {
+    updateModel(activeList, id, "cachedImage", path)
+    updateModel(historyList, id, "cachedImage", path)
+    saveHistory()
+  }
+
+  function updateModel(model, id, prop, value) {
+    for (var i = 0; i < model.count; i++) {
+      if (model.get(i).id === id) {
+        model.setProperty(i, prop, value)
+        break
       }
+    }
+  }
+
+  function removeActive(id) {
+    for (var i = 0; i < activeList.count; i++) {
+      if (activeList.get(i).id === id) {
+        activeList.remove(i)
+        delete activeMap[id]
+        delete progressTimers[id]
+        break
+      }
+    }
+  }
+
+  // Auto-hide timer
+  Timer {
+    interval: 10
+    repeat: true
+    running: activeList.count > 0
+    onTriggered: {
+      const now = Date.now()
+      const durations = [Settings.data.notifications?.lowUrgencyDuration * 1000 || 3000, Settings.data.notifications?.normalUrgencyDuration * 1000 || 8000, Settings.data.notifications?.criticalUrgencyDuration * 1000 || 15000]
+
+      for (var i = activeList.count - 1; i >= 0; i--) {
+        const notif = activeList.get(i)
+        const elapsed = now - notif.timestamp.getTime()
+        var expire = 0
+
+        if (Settings.data.notifications?.respectExpireTimeout)
+        expire = notif.expireTimeout > 0 ? notif.expireTimeout : durations[notif.urgency]
+        else
+        expire = durations[notif.urgency]
+
+        const progress = Math.max(1.0 - (elapsed / expire), 0.0)
+        updateModel(activeList, notif.id, "progress", progress)
+
+        if (elapsed >= expire) {
+          animateAndRemove(notif.id)
+          delete progressTimers[notif.id]
+          break
+        }
+      }
+    }
+  }
+
+  // History management
+  function addToHistory(data) {
+    historyList.insert(0, data)
+
+    while (historyList.count > maxHistory) {
+      const old = historyList.get(historyList.count - 1)
+      if (old.cachedImage && !old.cachedImage.startsWith("image://")) {
+        Quickshell.execDetached(["rm", "-f", old.cachedImage])
+      }
+      historyList.remove(historyList.count - 1)
+    }
+    saveHistory()
+  }
+
+  // Persistence
+  FileView {
+    id: historyFileView
+    path: historyFile
+    printErrors: false
+    onLoaded: loadHistory()
+    onLoadFailed: error => {
+      if (error === 2)
+      writeAdapter()
     }
 
     JsonAdapter {
-      id: historyAdapter
-      property var history: []
-      property double timestamp: 0
+      id: adapter
+      property var notifications: []
     }
   }
 
-  // Maximum visible notifications
-  property int maxVisible: 5
-
-  // Auto-hide timer
-  property Timer hideTimer: Timer {
-    interval: 8000 // 8 seconds - longer display time
-    repeat: true
-    running: notificationModel.count > 0
-
-    onTriggered: {
-      if (notificationModel.count === 0) {
-        return
-      }
-
-      // Remove the oldest notification (last in the list)
-      let oldestNotification = notificationModel.get(notificationModel.count - 1).rawNotification
-      if (oldestNotification) {
-        // Trigger animation signal instead of direct dismiss
-        animateAndRemove(oldestNotification, notificationModel.count - 1)
-      }
-    }
-  }
-
-  // Function to add notification to model
-  function addNotification(notification) {
-    notificationModel.insert(0, {
-                               "rawNotification": notification,
-                               "summary": notification.summary,
-                               "body": notification.body,
-                               "appName": notification.appName,
-                               "urgency": notification.urgency,
-                               "timestamp": new Date()
-                             })
-
-    // Remove oldest notifications if we exceed maxVisible
-    while (notificationModel.count > maxVisible) {
-      let oldestNotification = notificationModel.get(notificationModel.count - 1).rawNotification
-      if (oldestNotification) {
-        oldestNotification.dismiss()
-      }
-      notificationModel.remove(notificationModel.count - 1)
-    }
-  }
-
-  // Add a simplified copy into persistent history
-  function addToHistory(notification) {
-    historyModel.insert(0, {
-                          "summary": notification.summary,
-                          "body": notification.body,
-                          "appName": notification.appName,
-                          "urgency": notification.urgency,
-                          "timestamp": new Date()
-                        })
-    while (historyModel.count > maxHistory) {
-      historyModel.remove(historyModel.count - 1)
-    }
-    saveHistory()
-  }
-
-  function clearHistory() {
-    historyModel.clear()
-    saveHistory()
-  }
-
-  function loadFromHistory() {
-    // Populate in-memory model from adapter
-    try {
-      historyModel.clear()
-      const items = historyAdapter.history || []
-      for (var i = 0; i < items.length; i++) {
-        const it = items[i]
-        historyModel.append({
-                              "summary": it.summary || "",
-                              "body": it.body || "",
-                              "appName": it.appName || "",
-                              "urgency": it.urgency,
-                              "timestamp": it.timestamp ? new Date(it.timestamp) : new Date()
-                            })
-      }
-    } catch (e) {
-      Logger.error("Notifications", "Failed to load history:", e)
-    }
+  Timer {
+    id: saveTimer
+    interval: 200
+    onTriggered: performSaveHistory()
   }
 
   function saveHistory() {
+    saveTimer.restart()
+  }
+
+  function performSaveHistory() {
     try {
-      // Serialize model back to adapter
-      var arr = []
-      for (var i = 0; i < historyModel.count; i++) {
-        const n = historyModel.get(i)
-        arr.push({
-                   "summary": n.summary,
-                   "body": n.body,
-                   "appName": n.appName,
-                   "urgency": n.urgency,
-                   "timestamp": (n.timestamp instanceof Date) ? n.timestamp.getTime() : n.timestamp
-                 })
+      const items = []
+      for (var i = 0; i < historyList.count; i++) {
+        const n = historyList.get(i)
+        const copy = Object.assign({}, n)
+        copy.timestamp = n.timestamp.getTime()
+        items.push(copy)
       }
-      historyAdapter.history = arr
-      historyAdapter.timestamp = Time.timestamp
-
-      Qt.callLater(function () {
-        historyFileView.writeAdapter()
-      })
+      adapter.notifications = items
+      // Actually write the file
+      historyFileView.writeAdapter()
     } catch (e) {
-      Logger.error("Notifications", "Failed to save history:", e)
+      Logger.error("Notifications", "Save history failed:", e)
     }
   }
 
-  // Signal to trigger animation before removal
-  signal animateAndRemove(var notification, int index)
+  function loadHistory() {
+    try {
+      historyList.clear()
+      for (const item of adapter.notifications || []) {
+        const time = new Date(item.timestamp)
 
-  // Function to remove notification from model
-  function removeNotification(notification) {
-    for (var i = 0; i < notificationModel.count; i++) {
-      if (notificationModel.get(i).rawNotification === notification) {
-        // Emit signal to trigger animation first
-        animateAndRemove(notification, i)
-        break
+        // Check if we have a cached image and try to use it
+        let cachedImage = item.cachedImage || ""
+        if (item.originalImage && item.originalImage.startsWith("image://") && !cachedImage) {
+          // Try to generate the expected cached path
+          const imageId = generateImageId(item, item.originalImage)
+          if (imageId) {
+            cachedImage = Settings.cacheDirImagesNotifications + imageId + ".png"
+          }
+        }
+
+        historyList.append({
+                             "id": item.id || "",
+                             "summary": item.summary || "",
+                             "body": item.body || "",
+                             "appName": item.appName || "",
+                             "urgency": item.urgency < 0 || item.urgency > 2 ? 1 : item.urgency,
+                             "timestamp": time,
+                             "originalImage": item.originalImage || "",
+                             "cachedImage": cachedImage
+                           })
       }
+    } catch (e) {
+      Logger.error("Notifications", "Load failed:", e)
     }
   }
 
-  // Function to actually remove notification after animation
-  function forceRemoveNotification(notification) {
-    for (var i = 0; i < notificationModel.count; i++) {
-      if (notificationModel.get(i).rawNotification === notification) {
-        notificationModel.remove(i)
-        break
-      }
-    }
+  // Helpers
+  function getAppName(name) {
+    if (!name?.includes("."))
+      return name || ""
+    const entries = DesktopEntries.byId(name)
+    if (entries?.length)
+      return entries[0].name || name
+    const parts = name.split(".")
+    return parts[parts.length - 1].charAt(0).toUpperCase() + parts[parts.length - 1].slice(1)
   }
 
-  // Function to format timestamp
-  function formatTimestamp(timestamp) {
-    if (!timestamp)
+  function getIcon(icon) {
+    if (!icon)
       return ""
+    if (icon.startsWith("/") || icon.startsWith("file://"))
+      return icon
+    return ThemeIcons.iconFromName(icon)
+  }
 
-    const now = new Date()
-    const diff = now - timestamp
+  function stripTags(text) {
+    return text.replace(/<[^>]*>?/gm, '')
+  }
 
-    // Less than 1 minute
-    if (diff < 60000) {
-      return "now"
-    } // Less than 1 hour
-    else if (diff < 3600000) {
-      const minutes = Math.floor(diff / 60000)
-      return `${minutes}m ago`
-    } // Less than 24 hours
-    else if (diff < 86400000) {
-      const hours = Math.floor(diff / 3600000)
-      return `${hours}h ago`
-    } // More than 24 hours
-    else {
-      const days = Math.floor(diff / 86400000)
-      return `${days}d ago`
+  function generateImageId(notification, image) {
+    if (image && image.startsWith("image://")) {
+      // For qsimage URLs, try to use a combination that's unique per user
+      if (image.startsWith("image://qsimage/")) {
+        // Try to use app name + summary for uniqueness (summary often contains username)
+        const key = (notification.appName || "") + "|" + (notification.summary || "")
+        return Checksum.sha256(key)
+      }
+
+      return Checksum.sha256(image)
+    }
+    return ""
+  }
+
+  // Public API
+  function dismissActiveNotification(id) {
+    activeMap[id]?.dismiss()
+    removeActive(id)
+  }
+
+  function dismissAllActive() {
+    Object.values(activeMap).forEach(n => n.dismiss())
+    activeList.clear()
+    activeMap = {}
+  }
+
+  function invokeAction(id, actionId) {
+    const n = activeMap[id]
+    if (!n?.actions)
+      return false
+
+    for (const action of n.actions) {
+      if (action.identifier === actionId && action.invoke) {
+        action.invoke()
+        return true
+      }
+    }
+    return false
+  }
+
+  function removeFromHistory(notificationId) {
+    for (var i = 0; i < historyList.count; i++) {
+      const notif = historyList.get(i)
+      if (notif.id === notificationId) {
+        // Delete cached image if it exists
+        if (notif.cachedImage && !notif.cachedImage.startsWith("image://")) {
+          Quickshell.execDetached(["rm", "-f", notif.cachedImage])
+        }
+        historyList.remove(i)
+        saveHistory()
+        return true
+      }
+    }
+    return false
+  }
+
+  function clearHistory() {
+    // Remove all cached images
+    try {
+      Quickshell.execDetached(["sh", "-c", `rm -rf "${Settings.cacheDirImagesNotifications}"*`])
+    } catch (e) {
+      Logger.error("Notifications", "Failed to clear cache directory:", e)
+    }
+
+    historyList.clear()
+    saveHistory()
+  }
+
+  // Signals & connections
+  signal animateAndRemove(string notificationId)
+
+  Connections {
+    target: Settings.data.notifications
+    function onDoNotDisturbChanged() {
+      const enabled = Settings.data.notifications.doNotDisturb
+      ToastService.showNotice(enabled ? "'Do not disturb' enabled" : "'Do not disturb' disabled", enabled ? "You'll find these notifications in your history." : "Showing all notifications.")
     }
   }
 }

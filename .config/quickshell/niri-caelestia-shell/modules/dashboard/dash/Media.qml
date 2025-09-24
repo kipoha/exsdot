@@ -1,7 +1,9 @@
 import qs.components
+import qs.components.misc
 import qs.services
 import qs.config
 import qs.utils
+import Caelestia
 import QtQuick
 import QtQuick.Shapes
 
@@ -18,10 +20,8 @@ Item {
     implicitWidth: Config.dashboard.sizes.mediaWidth
 
     Behavior on playerProgress {
-        NumberAnimation {
+        Anim {
             duration: Appearance.anim.durations.large
-            easing.type: Easing.BezierSpline
-            easing.bezierCurve: Appearance.anim.curves.standard
         }
     }
 
@@ -33,6 +33,10 @@ Item {
         onTriggered: Players.active?.positionChanged()
     }
 
+    ServiceRef {
+        service: BeatTracker
+    }
+
     Shape {
         preferredRendererType: Shape.CurveRenderer
 
@@ -40,7 +44,7 @@ Item {
             fillColor: "transparent"
             strokeColor: Colours.layer(Colours.palette.m3surfaceContainerHigh, 2)
             strokeWidth: Config.dashboard.sizes.mediaProgressThickness
-            capStyle: ShapePath.RoundCap
+            capStyle: Appearance.rounding.scale === 0 ? ShapePath.SquareCap : ShapePath.RoundCap
 
             PathAngleArc {
                 centerX: cover.x + cover.width / 2
@@ -52,11 +56,7 @@ Item {
             }
 
             Behavior on strokeColor {
-                ColorAnimation {
-                    duration: Appearance.anim.durations.normal
-                    easing.type: Easing.BezierSpline
-                    easing.bezierCurve: Appearance.anim.curves.standard
-                }
+                CAnim {}
             }
         }
 
@@ -64,7 +64,7 @@ Item {
             fillColor: "transparent"
             strokeColor: Colours.palette.m3primary
             strokeWidth: Config.dashboard.sizes.mediaProgressThickness
-            capStyle: ShapePath.RoundCap
+            capStyle: Appearance.rounding.scale === 0 ? ShapePath.SquareCap : ShapePath.RoundCap
 
             PathAngleArc {
                 centerX: cover.x + cover.width / 2
@@ -76,11 +76,7 @@ Item {
             }
 
             Behavior on strokeColor {
-                ColorAnimation {
-                    duration: Appearance.anim.durations.normal
-                    easing.type: Easing.BezierSpline
-                    easing.bezierCurve: Appearance.anim.curves.standard
-                }
+                CAnim {}
             }
         }
     }
@@ -218,8 +214,8 @@ Item {
         anchors.margins: Appearance.padding.large * 2
 
         playing: Players.active?.isPlaying ?? false
-        speed: BeatDetector.bpm / 300
-        source: Paths.expandTilde(Config.paths.mediaGif)
+        speed: BeatTracker.bpm / 300
+        source: Paths.absolutePath(Config.paths.mediaGif)
         asynchronous: true
         fillMode: AnimatedImage.PreserveAspectFit
     }

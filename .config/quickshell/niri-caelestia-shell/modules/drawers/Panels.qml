@@ -33,7 +33,7 @@ Item {
 
         clip: root.visibilities.session
         screen: root.screen
-        visibility: root.visibilities.osd
+        visibilities: root.visibilities
 
         anchors.verticalCenter: parent.verticalCenter
         anchors.right: parent.right
@@ -63,6 +63,7 @@ Item {
         id: launcher
 
         visibilities: root.visibilities
+        panels: root
 
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
@@ -91,7 +92,7 @@ Item {
             const diff = root.height - Math.floor(off + nonAnimHeight);
             if (diff < 0)
                 return off + diff;
-            return off;
+            return Math.max(off, 0);
         }
     }
 

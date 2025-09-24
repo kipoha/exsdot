@@ -19,7 +19,7 @@ Item {
 
     Image {
         anchors.fill: parent
-        source: root.lock.animating ? "" : (Players.active?.trackArtUrl ?? "")
+        source: Players.active?.trackArtUrl ?? ""
 
         asynchronous: true
         fillMode: Image.PreserveAspectCrop
@@ -163,7 +163,7 @@ Item {
         implicitHeight: controlIcon.implicitHeight + Appearance.padding.normal * 2
 
         color: active ? Colours.palette[`m3${colour.toLowerCase()}`] : Colours.palette[`m3${colour.toLowerCase()}Container`]
-        radius: active || controlState.pressed ? Appearance.rounding.normal : Math.min(implicitWidth, implicitHeight) / 2
+        radius: active || controlState.pressed ? Appearance.rounding.normal : Math.min(implicitWidth, implicitHeight) / 2 * Math.min(1, Appearance.rounding.scale)
 
         Elevation {
             anchors.fill: parent
@@ -208,11 +208,5 @@ Item {
                 easing.bezierCurve: Appearance.anim.curves.expressiveFastSpatial
             }
         }
-    }
-
-    component Anim: NumberAnimation {
-        duration: Appearance.anim.durations.normal
-        easing.type: Easing.BezierSpline
-        easing.bezierCurve: Appearance.anim.curves.standard
     }
 }

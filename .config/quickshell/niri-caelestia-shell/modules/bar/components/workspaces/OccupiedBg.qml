@@ -9,7 +9,7 @@ import QtQuick
 Item {
     id: root
 
-    required property list<Workspace> workspaces
+    required property Repeater workspaces
     required property var occupied
     required property int groupOffset
 
@@ -52,21 +52,47 @@ Item {
 
             required property var modelData
 
-            readonly property Workspace start: root.workspaces[modelData.start - 1 - root.groupOffset] ?? null
-            readonly property Workspace end: root.workspaces[modelData.end - 1 - root.groupOffset] ?? null
+            readonly property Workspace start: root.workspaces.itemAt(getWsIdx(modelData.start)) ?? null
+            readonly property Workspace end: root.workspaces.itemAt(getWsIdx(modelData.end)) ?? null
+            property bool isContextActiveInWs: Niri.wsContextType === "workspaces" && Niri.wsContextAnchor
+            function getWsIdx(ws: int): int {
+                let i = ws - 1;
+                while (i < 0)
+                    i += Config.bar.workspaces.shown;
+                return i % Config.bar.workspaces.shown;
+            }
 
-            color: Colours.tPalette.m3surfaceContainerHigh
-            radius: Config.bar.workspaces.rounded ? Appearance.rounding.full : 0
+            anchors {
+                // horizontalCenter: root.horizontalCenter
+                left: root.left
+                right: root.right
+                rightMargin: isContextActiveInWs ? -Config.bar.workspaces.windowContextWidth + Appearance.padding.small : 0
+            }
 
-            x: start?.x ?? 0
-            y: start?.y ?? 0
-            implicitWidth: Config.bar.sizes.innerHeight
-            implicitHeight: end?.y + end?.height - start?.y
+            topRightRadius: isContextActiveInWs ? Appearance.rounding.normal : radius
+            bottomRightRadius: isContextActiveInWs ? Appearance.rounding.normal : radius
 
-            anchors.horizontalCenter: parent.horizontalCenter
+            y: (start?.y ?? 0)
+            // implicitWidth: Config.bar.sizes.innerWidth - Appearance.padding.small * 2 + 2
+            implicitHeight: start && end ? end.y + end.size - start.y : 0
+            // implicitHeight: end?.y + end?.height - start?.y
+
+            color: Colours.layer(Colours.palette.m3surfaceContainerHigh, 2)
+            radius: Appearance.rounding.small
 
             scale: 0
-            Component.onCompleted: scale = 0.95
+            Component.onCompleted: scale = 1.0
+
+            Behavior on topRightRadius {
+                Anim {
+                    easing.bezierCurve: Appearance.anim.curves.emphasized
+                }
+            }
+            Behavior on bottomRightRadius {
+                Anim {
+                    easing.bezierCurve: Appearance.anim.curves.emphasized
+                }
+            }
 
             Behavior on scale {
                 Anim {
@@ -74,20 +100,22 @@ Item {
                 }
             }
 
-            Behavior on x {
-                Anim {}
+            Behavior on anchors.rightMargin {
+                Anim {
+                    duration: Appearance.anim.durations.normal
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: Appearance.anim.curves.emphasized
+                }
             }
 
             Behavior on y {
                 Anim {}
             }
-        }
-    }
 
-    component Anim: NumberAnimation {
-        duration: Appearance.anim.durations.normal
-        easing.type: Easing.BezierSpline
-        easing.bezierCurve: Appearance.anim.curves.standard
+            Behavior on implicitHeight {
+                Anim {}
+            }
+        }
     }
 
     component Pill: QtObject {

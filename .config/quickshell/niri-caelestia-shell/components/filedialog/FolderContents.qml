@@ -6,13 +6,12 @@ import "../images"
 import qs.services
 import qs.config
 import qs.utils
+import Caelestia
 import Quickshell
-import Quickshell.Io
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Effects
 import QtQuick.Controls
-import Qt.labs.folderlistmodel
 
 Item {
     id: root
@@ -50,8 +49,11 @@ Item {
 
     Loader {
         anchors.centerIn: parent
-        active: view.count === 0
+
+        opacity: view.count === 0 ? 1 : 0
+        active: opacity > 0
         asynchronous: true
+
         sourceComponent: ColumnLayout {
             MaterialIcon {
                 Layout.alignment: Qt.AlignHCenter
@@ -67,6 +69,10 @@ Item {
                 font.pointSize: Appearance.font.size.large
                 font.weight: 500
             }
+        }
+
+        Behavior on opacity {
+            Anim {}
         }
     }
 
@@ -86,37 +92,30 @@ Item {
 
         Keys.onReturnPressed: {
             if (root.dialog.selectionValid)
-                root.dialog.accepted(currentItem.filePath);
+                root.dialog.accepted(currentItem.modelData.path);
         }
         Keys.onEnterPressed: {
             if (root.dialog.selectionValid)
-                root.dialog.accepted(currentItem.filePath);
+                root.dialog.accepted(currentItem.modelData.path);
         }
 
         ScrollBar.vertical: StyledScrollBar {}
 
-        model: FolderListModel {
-            showDirsFirst: true
-            folder: {
-                let url = "file://";
+        model: FileSystemModel {
+            path: {
                 if (root.dialog.cwd[0] === "Home")
-                    url += `${Paths.strip(Paths.home)}/${root.dialog.cwd.slice(1).join("/")}`;
+                    return `${Paths.home}/${root.dialog.cwd.slice(1).join("/")}`;
                 else
-                    url += root.dialog.cwd.join("/");
-                return url;
+                    return root.dialog.cwd.join("/");
             }
-            onFolderChanged: view.currentIndex = -1
+            onPathChanged: view.currentIndex = -1
         }
 
         delegate: StyledRect {
             id: item
 
             required property int index
-            required property string fileName
-            required property string filePath
-            required property url fileUrl
-            required property string fileSuffix
-            required property bool fileIsDir
+            required property FileSystemEntry modelData
 
             readonly property real nonAnimHeight: icon.implicitHeight + name.anchors.topMargin + name.implicitHeight + Appearance.padding.normal * 2
 
@@ -130,10 +129,10 @@ Item {
 
             StateLayer {
                 onDoubleClicked: {
-                    if (item.fileIsDir)
-                        root.dialog.cwd.push(item.fileName);
+                    if (item.modelData.isDir)
+                        root.dialog.cwd.push(item.modelData.name);
                     else if (root.dialog.selectionValid)
-                        root.dialog.accepted(item.filePath);
+                        root.dialog.accepted(item.modelData.path);
                 }
 
                 function onClicked(): void {
@@ -148,33 +147,18 @@ Item {
                 anchors.top: parent.top
                 anchors.topMargin: Appearance.padding.normal
 
-                asynchronous: true
                 implicitSize: Sizes.itemWidth - Appearance.padding.normal * 2
-                source: {
-                    if (!item.fileIsDir)
-                        return Quickshell.iconPath("application-x-zerosize");
 
-                    const name = item.fileName;
-                    if (root.dialog.cwd.length === 1 && ["Desktop", "Documents", "Downloads", "Music", "Pictures", "Public", "Templates", "Videos"].includes(name))
-                        return Quickshell.iconPath(`folder-${name.toLowerCase()}`);
-
-                    return Quickshell.iconPath("inode-directory");
-                }
-
-                onStatusChanged: {
-                    if (status === Image.Error)
-                        source = Quickshell.iconPath("error");
-                }
-
-                Process {
-                    running: !item.fileIsDir
-                    command: ["file", "--mime", "-b", item.filePath]
-                    stdout: StdioCollector {
-                        onStreamFinished: {
-                            const mime = text.split(";")[0].replace("/", "-");
-                            icon.source = Images.validImageTypes.some(t => mime === `image-${t}`) ? item.fileUrl : Quickshell.iconPath(mime, "image-missing");
-                        }
-                    }
+                Component.onCompleted: {
+                    const file = item.modelData;
+                    if (file.isImage)
+                        source = Qt.resolvedUrl(file.path);
+                    else if (!file.isDir)
+                        source = Quickshell.iconPath(file.mimeType.replace("/", "-"), "application-x-zerosize");
+                    else if (root.dialog.cwd.length === 1 && ["Desktop", "Documents", "Downloads", "Music", "Pictures", "Public", "Templates", "Videos"].includes(file.name))
+                        source = Quickshell.iconPath(`folder-${file.name.toLowerCase()}`);
+                    else
+                        source = Quickshell.iconPath("inode-directory");
                 }
             }
 
@@ -188,9 +172,10 @@ Item {
                 anchors.margins: Appearance.padding.normal
 
                 horizontalAlignment: Text.AlignHCenter
-                text: item.fileName
                 elide: item.GridView.isCurrentItem ? Text.ElideNone : Text.ElideRight
                 wrapMode: item.GridView.isCurrentItem ? Text.WrapAtWordBoundaryOrAnywhere : Text.NoWrap
+
+                Component.onCompleted: text = item.modelData.name
             }
 
             Behavior on implicitHeight {
@@ -198,12 +183,37 @@ Item {
             }
         }
 
-        populate: Transition {
+        add: Transition {
+            Anim {
+                properties: "opacity,scale"
+                from: 0
+                to: 1
+                duration: Appearance.anim.durations.expressiveDefaultSpatial
+                easing.bezierCurve: Appearance.anim.curves.expressiveDefaultSpatial
+            }
+        }
+
+        remove: Transition {
+            Anim {
+                property: "opacity"
+                to: 0
+            }
             Anim {
                 property: "scale"
-                from: 0.7
+                to: 0.5
+            }
+        }
+
+        displaced: Transition {
+            Anim {
+                properties: "opacity,scale"
                 to: 1
                 easing.bezierCurve: Appearance.anim.curves.standardDecel
+            }
+            Anim {
+                properties: "x,y"
+                duration: Appearance.anim.durations.expressiveDefaultSpatial
+                easing.bezierCurve: Appearance.anim.curves.expressiveDefaultSpatial
             }
         }
     }
@@ -214,11 +224,5 @@ Item {
         anchors.margins: Appearance.padding.small
 
         currentItem: view.currentItem
-    }
-
-    component Anim: NumberAnimation {
-        duration: Appearance.anim.durations.normal
-        easing.type: Easing.BezierSpline
-        easing.bezierCurve: Appearance.anim.curves.standard
     }
 }

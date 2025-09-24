@@ -9,6 +9,20 @@ import qs.Commons
 Singleton {
   id: root
 
+  // Public init to rehydrate cache after Settings load
+  function init() {
+    // Rebuild cache from persisted settings
+    var monitors = Settings.data.wallpaper.monitors || []
+    currentWallpapers = ({})
+    for (var i = 0; i < monitors.length; i++) {
+      if (monitors[i].name && monitors[i].wallpaper) {
+        currentWallpapers[monitors[i].name] = monitors[i].wallpaper
+        // Notify listeners so Background updates immediately after settings load
+        root.wallpaperChanged(monitors[i].name, monitors[i].wallpaper)
+      }
+    }
+  }
+
   Component.onCompleted: {
     Logger.log("Wallpaper", "Service started")
 
@@ -97,8 +111,7 @@ Singleton {
   // All transition keys but filter out "none" and "random" so we are left with the real transitions
   readonly property var allTransitions: Array.from({
                                                      "length": transitionsModel.count
-                                                   }, (_, i) => transitionsModel.get(i).key).filter(
-                                          key => key !== "random" && key != "none")
+                                                   }, (_, i) => transitionsModel.get(i).key).filter(key => key !== "random" && key != "none")
 
   property var wallpaperLists: ({})
   property int scanningCount: 0
@@ -216,11 +229,11 @@ Singleton {
   // -------------------------------------------------------------------
   // Get specific monitor wallpaper - now from cache
   function getWallpaper(screenName) {
-    return currentWallpapers[screenName] || ""
+    return currentWallpapers[screenName] || Settings.defaultWallpaper
   }
 
   // -------------------------------------------------------------------
-  function changeWallpaper(screenName, path) {
+  function changeWallpaper(path, screenName) {
     if (screenName !== undefined) {
       _setWallpaper(screenName, path)
     } else {
@@ -305,7 +318,7 @@ Singleton {
         if (wallpaperList.length > 0) {
           var randomIndex = Math.floor(Math.random() * wallpaperList.length)
           var randomPath = wallpaperList[randomIndex]
-          changeWallpaper(screenName, randomPath)
+          changeWallpaper(randomPath, screenName)
         }
       }
     } else {
@@ -315,7 +328,7 @@ Singleton {
       if (wallpaperList.length > 0) {
         var randomIndex = Math.floor(Math.random() * wallpaperList.length)
         var randomPath = wallpaperList[randomIndex]
-        changeWallpaper(undefined, randomPath)
+        changeWallpaper(randomPath, undefined)
       }
     }
   }

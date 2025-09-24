@@ -23,17 +23,10 @@ ColumnLayout {
     signal collapsed
 
     // Header height constant
-    readonly property int headerHeight: headerRow.implicitHeight + Appearance.padding.small * 2  // Typical Material header height
-
     Rectangle {
         id: backgroundRect
 
-        // anchors.left: parent.left
-        // anchors.right: parent.right
-        // anchors.top: parent.top
-        // anchors.bottom: parent.bottom
         Layout.alignment: Qt.AlignTop
-        // Layout.preferredHeight: 100
         Layout.fillWidth: true
 
         Layout.leftMargin: root.backgroundMargins >= 0 ? root.backgroundMargins : root.backgroundMarginLeft
@@ -46,22 +39,10 @@ ColumnLayout {
         radius: Appearance.rounding.small
 
         // Height is header + content (if expanded) + margins
-        Layout.preferredHeight: root.headerHeight + (root.expanded ? contentWrapper.implicitHeight : 0) + (anchors.topMargin + anchors.bottomMargin)
-
-        // Behavior on color {
-        //     NumberAnimation {
-        //         duration: Appearance.anim.durations.normal
-        //         easing.type: Easing.BezierSpline
-        //         easing.bezierCurve: Appearance.anim.curves.standard
-        //     }
-        // }
+        Layout.preferredHeight: headerRow.implicitHeight + Appearance.padding.small * 2 + (root.expanded ? contentWrapper.implicitHeight : 0) + (anchors.topMargin + anchors.bottomMargin)
 
         Behavior on Layout.preferredHeight {
-            NumberAnimation {
-                duration: Appearance.anim.durations.normal
-                easing.type: Easing.BezierSpline
-                easing.bezierCurve: Appearance.anim.curves.standard
-            }
+            Anim {}
         }
 
         ColumnLayout {
@@ -76,7 +57,7 @@ ColumnLayout {
                 Layout.bottomMargin: Appearance.padding.small
 
                 spacing: Appearance.spacing.normal
-                implicitHeight: root.headerHeight
+                implicitHeight: Appearance.spacing.normal + Appearance.padding.small * 2
 
                 StyledText {
                     Layout.fillWidth: true
@@ -135,11 +116,7 @@ ColumnLayout {
                 }
 
                 Behavior on Layout.preferredHeight {
-                    NumberAnimation {
-                        duration: Appearance.anim.durations.normal
-                        easing.type: Easing.BezierSpline
-                        easing.bezierCurve: Appearance.anim.curves.standard
-                    }
+                    Anim {}
                 }
             }
         }

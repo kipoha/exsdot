@@ -9,8 +9,7 @@ Singleton {
   id: root
 
   readonly property BluetoothAdapter adapter: Bluetooth.defaultAdapter
-  readonly property bool available: adapter !== null
-  readonly property bool enabled: (adapter && adapter.enabled) ?? false
+  readonly property bool available: (adapter !== null)
   readonly property bool discovering: (adapter && adapter.discovering) ?? false
   readonly property var devices: adapter ? adapter.devices : null
   readonly property var pairedDevices: {
@@ -28,6 +27,68 @@ Singleton {
     return adapter.devices.values.filter(dev => {
                                            return dev && dev.batteryAvailable && dev.battery > 0
                                          })
+  }
+
+  property bool lastAdapterState: false
+
+  function init() {
+    Logger.log("Bluetooth", "Service initialized")
+    syncStateTimer.running = true
+  }
+
+  Timer {
+    id: syncStateTimer
+    interval: 1000
+    repeat: false
+    onTriggered: {
+      lastAdapterState = Settings.data.network.bluetoothEnabled = adapter.enabled
+    }
+  }
+
+  Timer {
+    id: discoveryTimer
+    interval: 1000
+    repeat: false
+    onTriggered: adapter.discovering = true
+  }
+
+  Timer {
+    id: stateDebounceTimer
+    interval: 200
+    repeat: false
+    onTriggered: {
+      if (!adapter) {
+        Logger.warn("Bluetooth", "State debouncer", "No adapter available")
+        return
+      }
+      if (lastAdapterState === adapter.enabled) {
+        return
+      }
+      lastAdapterState = adapter.enabled
+      if (adapter.enabled) {
+        ToastService.showNotice("Bluetooth", "Enabled")
+      } else {
+        ToastService.showNotice("Bluetooth", "Disabled")
+      }
+    }
+  }
+
+  Connections {
+    target: adapter
+    function onEnabledChanged() {
+      if (!adapter) {
+        Logger.warn("Bluetooth", "onEnabledChanged", "No adapter available")
+        return
+      }
+
+      Logger.log("Bluetooth", "onEnableChanged", adapter.enabled)
+      Settings.data.network.bluetoothEnabled = adapter.enabled
+      stateDebounceTimer.restart()
+      if (adapter.enabled) {
+        // Using a timer to give a little time so the adapter is really enabled
+        discoveryTimer.running = true
+      }
+    }
   }
 
   function sortDevices(devices) {
@@ -51,36 +112,34 @@ Singleton {
 
   function getDeviceIcon(device) {
     if (!device) {
-      return "bluetooth"
+      return "bt-device-generic"
     }
 
     var name = (device.name || device.deviceName || "").toLowerCase()
     var icon = (device.icon || "").toLowerCase()
-    if (icon.includes("headset") || icon.includes("audio") || name.includes("headphone") || name.includes("airpod")
-        || name.includes("headset") || name.includes("arctis")) {
-      return "headset"
+    if (icon.includes("headset") || icon.includes("audio") || name.includes("headphone") || name.includes("airpod") || name.includes("headset") || name.includes("arctis")) {
+      return "bt-device-headphones"
     }
 
     if (icon.includes("mouse") || name.includes("mouse")) {
-      return "mouse"
+      return "bt-device-mouse"
     }
     if (icon.includes("keyboard") || name.includes("keyboard")) {
-      return "keyboard"
+      return "bt-device-keyboard"
     }
-    if (icon.includes("phone") || name.includes("phone") || name.includes("iphone") || name.includes("android")
-        || name.includes("samsung")) {
-      return "smartphone"
+    if (icon.includes("phone") || name.includes("phone") || name.includes("iphone") || name.includes("android") || name.includes("samsung")) {
+      return "bt-device-phone"
     }
     if (icon.includes("watch") || name.includes("watch")) {
-      return "watch"
+      return "bt-device-watch"
     }
     if (icon.includes("speaker") || name.includes("speaker")) {
-      return "speaker"
+      return "bt-device-speaker"
     }
     if (icon.includes("display") || name.includes("tv")) {
-      return "tv"
+      return "bt-device-tv"
     }
-    return "bluetooth"
+    return "bt-device-generic"
   }
 
   function canConnect(device) {
@@ -107,13 +166,20 @@ Singleton {
     return device.connected && !device.pairing && !device.blocked
   }
 
-  function getSignalStrength(device) {
+  function getStatusString(device) {
+    if (device.state === BluetoothDeviceState.Connecting) {
+      return "Connecting..."
+    }
     if (device.pairing) {
       return "Pairing..."
     }
     if (device.blocked) {
       return "Blocked"
     }
+    return ""
+  }
+
+  function getSignalStrength(device) {
     if (!device || device.signalStrength === undefined || device.signalStrength <= 0) {
       return "Signal: Unknown"
     }
@@ -130,7 +196,7 @@ Singleton {
     if (signal >= 20) {
       return "Signal: Poor"
     }
-    return "Signal: Very Poor"
+    return "Signal: Very poor"
   }
 
   function getBattery(device) {
@@ -162,8 +228,7 @@ Singleton {
       return false
     }
 
-    return device.pairing || device.state === BluetoothDeviceState.Disconnecting
-        || device.state === BluetoothDeviceState.Connecting
+    return device.pairing || device.state === BluetoothDeviceState.Disconnecting || device.state === BluetoothDeviceState.Connecting
   }
 
   function connectDeviceWithTrust(device) {
@@ -192,12 +257,13 @@ Singleton {
     device.forget()
   }
 
-  function setBluetoothEnabled(enabled) {
+  function setBluetoothEnabled(state) {
     if (!adapter) {
       Logger.warn("Bluetooth", "No adapter available")
       return
     }
 
-    adapter.enabled = enabled
+    Logger.log("Bluetooth", "SetBluetoothEnabled", state)
+    adapter.enabled = state
   }
 }

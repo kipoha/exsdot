@@ -13,7 +13,7 @@ RowLayout {
   property bool hovering: false
   property color activeColor: Color.mPrimary
   property color activeOnColor: Color.mOnPrimary
-  property int baseSize: Math.max(Style.baseWidgetSize * 0.8, 14)
+  property int baseSize: Style.baseWidgetSize * 0.7
 
   signal toggled(bool checked)
   signal entered
@@ -27,34 +27,41 @@ RowLayout {
     visible: root.label !== "" || root.description !== ""
   }
 
+  // Spacer to push the checkbox to the far right
+  Item {
+    Layout.fillWidth: true
+  }
+
   Rectangle {
     id: box
 
-    implicitWidth: root.baseSize * scaling
-    implicitHeight: root.baseSize * scaling
+    implicitWidth: Math.round(root.baseSize * scaling)
+    implicitHeight: Math.round(root.baseSize * scaling)
     radius: Style.radiusXS * scaling
     color: root.checked ? root.activeColor : Color.mSurface
-    border.color: root.checked ? root.activeColor : Color.mOutline
-    border.width: Math.max(1, Style.borderM * scaling)
+    border.color: Color.mOutline
+    border.width: Math.max(1, Style.borderS * scaling)
 
     Behavior on color {
       ColorAnimation {
-        duration: Style.animationNormal
+        duration: Style.animationFast
       }
     }
 
     Behavior on border.color {
       ColorAnimation {
-        duration: Style.animationNormal
+        duration: Style.animationFast
       }
     }
 
     NIcon {
       visible: root.checked
       anchors.centerIn: parent
-      text: "check"
+      anchors.horizontalCenterOffset: -1 * scaling
+      icon: "check"
       color: root.activeOnColor
-      font.pointSize: Math.max(Style.fontSizeS, root.baseSize * 0.7) * scaling
+      font.pointSize: Math.max(Style.fontSizeXS, root.baseSize * 0.5) * scaling
+      font.weight: Style.fontWeightBold
     }
 
     MouseArea {

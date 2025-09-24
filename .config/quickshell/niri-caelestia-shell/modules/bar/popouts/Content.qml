@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import qs.components
 import qs.config
 import Quickshell
 import Quickshell.Services.SystemTray
@@ -20,6 +21,18 @@ Item {
 
         anchors.fill: parent
         anchors.margins: Appearance.padding.large
+
+        Popout {
+            name: "wsWindow"
+            sourceComponent:
+            // Bind y to currentCenter for dynamic following
+            WsContextPopout {}
+        }
+
+        // Popout { // TODO
+        //     name: "workspaces"
+        //     sourceComponent: WorkspacesPopout {}
+        // }
 
         Popout {
             name: "activewindow"
@@ -50,6 +63,16 @@ Item {
             sourceComponent: Audio {
                 wrapper: root.wrapper
             }
+        }
+
+        Popout {
+            name: "kblayout"
+            source: "KbLayout.qml"
+        }
+
+        Popout {
+            name: "lockstatus"
+            source: "LockStatus.qml"
         }
 
         Repeater {
@@ -101,7 +124,6 @@ Item {
         opacity: 0
         scale: 0.8
         active: false
-        asynchronous: true
 
         states: State {
             name: "active"
@@ -145,11 +167,5 @@ Item {
                 }
             }
         ]
-    }
-
-    component Anim: NumberAnimation {
-        duration: Appearance.anim.durations.normal
-        easing.type: Easing.BezierSpline
-        easing.bezierCurve: Appearance.anim.curves.standard
     }
 }

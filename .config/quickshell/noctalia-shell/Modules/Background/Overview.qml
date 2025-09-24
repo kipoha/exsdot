@@ -60,6 +60,7 @@ Variants {
       MultiEffect {
         anchors.fill: parent
         source: bgImage
+        autoPaddingEnabled: false
         blurEnabled: true
         blur: 0.48
         blurMax: 128
@@ -68,9 +69,7 @@ Variants {
       // Make the overview darker
       Rectangle {
         anchors.fill: parent
-        color: Settings.data.colorSchemes.darkMode ? Qt.rgba(Color.mSurface.r, Color.mSurface.g, Color.mSurface.b,
-                                                             0.5) : Qt.rgba(Color.mOnSurface.r, Color.mOnSurface.g,
-                                                                            Color.mOnSurface.b, 0.5)
+        color: Settings.data.colorSchemes.darkMode ? Qt.alpha(Color.mSurface, Style.opacityMedium) : Qt.alpha(Color.mOnSurface, Style.opacityMedium)
       }
     }
   }

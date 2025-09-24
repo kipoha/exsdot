@@ -16,7 +16,7 @@ Item {
 
     required property Item wrapper
 
-    implicitWidth: Niri.focusedWindowTitle /*Niri.activeToplevel*/                           ? child.implicitWidth : -Appearance.padding.large * 2
+    implicitWidth: Niri.focusedWindowTitle /*Niri.activeToplevel*/  ? child.implicitWidth : -Appearance.padding.large * 2
     implicitHeight: child.implicitHeight
 
     ColumnLayout {

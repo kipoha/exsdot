@@ -13,27 +13,17 @@ NIconButton {
   property ShellScreen screen
   property real scaling: 1.0
 
-  visible: Settings.data.network.wifiEnabled
-
-  sizeRatio: 0.8
-
-  Component.onCompleted: {
-    Logger.log("WiFi", "Widget component completed")
-    Logger.log("WiFi", "NetworkService available:", !!NetworkService)
-    if (NetworkService) {
-      Logger.log("WiFi", "NetworkService.networks available:", !!NetworkService.networks)
-    }
-  }
-
-  colorBg: Color.mSurfaceVariant
+  compact: (Settings.data.bar.density === "compact")
+  baseSize: Style.capsuleHeight
+  colorBg: (Settings.data.bar.showCapsule ? Color.mSurfaceVariant : Color.transparent)
   colorFg: Color.mOnSurface
   colorBorder: Color.transparent
   colorBorderHover: Color.transparent
 
   icon: {
     try {
-      if (NetworkService.ethernet) {
-        return "lan"
+      if (NetworkService.ethernetConnected) {
+        return "ethernet"
       }
       let connected = false
       let signalStrength = 0
@@ -44,12 +34,13 @@ NIconButton {
           break
         }
       }
-      return connected ? NetworkService.signalIcon(signalStrength) : "wifi_find"
+      return connected ? NetworkService.signalIcon(signalStrength) : "wifi-off"
     } catch (error) {
-      Logger.error("WiFi", "Error getting icon:", error)
+      Logger.error("Wi-Fi", "Error getting icon:", error)
       return "signal_wifi_bad"
     }
   }
-  tooltipText: "Network / Wi-Fi"
-  onClicked: PanelService.getPanel("wifiPanel")?.toggle(screen, this)
+  tooltipText: "Manage Wi-Fi"
+  onClicked: PanelService.getPanel("wifiPanel")?.toggle(this)
+  onRightClicked: PanelService.getPanel("wifiPanel")?.toggle(this)
 }

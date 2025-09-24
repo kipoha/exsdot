@@ -49,7 +49,7 @@ ColumnLayout {
 
                     color: isCurrent ? Colours.tPalette.m3surfaceContainerHighest : Colours.palette.m3tertiaryContainer
                     onColor: isCurrent ? Colours.palette.m3onSurface : Colours.palette.m3onTertiaryContainer
-                    text: (Niri.allWorkspaces[wsId - 1].name) || wsId
+                    text: (Niri.currentOutputWorkspaces[wsId - 1].name) || wsId
                     disabled: isCurrent
 
                     function onClicked(): void {

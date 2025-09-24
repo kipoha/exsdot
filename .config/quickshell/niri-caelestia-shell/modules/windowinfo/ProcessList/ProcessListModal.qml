@@ -51,7 +51,7 @@ Item {
         anchors.fill: parent
         spacing: Appearance.padding.normal
 
-        Rectangle {
+        StyledRect {
             Layout.fillWidth: true
             implicitHeight: 52
             color: Colours.palette.m3surfaceContainer
@@ -65,7 +65,7 @@ Item {
                 Repeater {
                     model: processListItem.tabNames
 
-                    Rectangle {
+                    StyledRect {
                         id: individualTab
 
                         required property int index
@@ -152,7 +152,7 @@ Item {
             }
         }
 
-        Rectangle {
+        StyledRect {
             Layout.fillWidth: true
             Layout.fillHeight: true
             radius: Appearance.rounding.small

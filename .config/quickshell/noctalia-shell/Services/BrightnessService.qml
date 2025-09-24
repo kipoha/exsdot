@@ -84,8 +84,7 @@ Singleton {
                                              var ddcModel = ddcModelMatc ? ddcModelMatc.length > 0 : false
                                              var model = modelMatch ? modelMatch[1] : "Unknown"
                                              var bus = busMatch ? busMatch[1] : "Unknown"
-                                             Logger.log("Detected DDC Monitor:", model, "on bus", bus, "is DDC:",
-                                                        !ddcModel)
+                                             Logger.log("Brigthness", "Detected DDC Monitor:", model, "on bus", bus, "is DDC:", !ddcModel)
                                              return {
                                                "model": model,
                                                "busNum": bus,
@@ -110,8 +109,42 @@ Singleton {
     property real lastBrightness: 0
     property real queuedBrightness: NaN
 
+    // For internal displays - store the backlight device path
+    property string backlightDevice: ""
+    property string brightnessPath: ""
+    property string maxBrightnessPath: ""
+    property int maxBrightness: 100
+    property bool ignoreNextChange: false
+
     // Signal for brightness changes
     signal brightnessUpdated(real newBrightness)
+
+    // FileView to watch for external brightness changes (internal displays only)
+    readonly property FileView brightnessWatcher: FileView {
+      id: brightnessWatcher
+      // Only set path for internal displays with a valid brightness path
+      path: (!monitor.isDdc && !monitor.isAppleDisplay && monitor.brightnessPath !== "") ? monitor.brightnessPath : ""
+      watchChanges: path !== ""
+      onFileChanged: {
+        reload()
+        if (monitor.ignoreNextChange) {
+          monitor.ignoreNextChange = false
+          return
+        }
+        if (text() === "")
+        return
+        var current = parseInt(text().trim())
+        if (!isNaN(current) && monitor.maxBrightness > 0) {
+          var newBrightness = current / monitor.maxBrightness
+          // Only update if it's actually different (avoid feedback loops)
+          if (Math.abs(newBrightness - monitor.brightness) > 0.01) {
+            monitor.brightness = newBrightness
+            monitor.brightnessUpdated(monitor.brightness)
+            //Logger.log("Brightness", "External change detected:", monitor.modelData.name, monitor.brightness)
+          }
+        }
+      }
+    }
 
     // Initialize brightness
     readonly property Process initProc: Process {
@@ -121,8 +154,8 @@ Singleton {
           if (dataText === "") {
             return
           }
-          Logger.log("Brightness", "Raw brightness data for", monitor.modelData.name + ":", dataText)
 
+          //Logger.log("Brightness", "Raw brightness data for", monitor.modelData.name + ":", dataText)
           if (monitor.isAppleDisplay) {
             var val = parseInt(dataText)
             if (!isNaN(val)) {
@@ -140,14 +173,20 @@ Singleton {
               }
             }
           } else {
-            // Internal backlight
-            var parts = dataText.split(" ")
-            if (parts.length >= 2) {
-              var current = parseInt(parts[0])
-              var max = parseInt(parts[1])
+            // Internal backlight - parse the response which includes device path
+            var lines = dataText.split("\n")
+            if (lines.length >= 3) {
+              monitor.backlightDevice = lines[0]
+              monitor.brightnessPath = monitor.backlightDevice + "/brightness"
+              monitor.maxBrightnessPath = monitor.backlightDevice + "/max_brightness"
+
+              var current = parseInt(lines[1])
+              var max = parseInt(lines[2])
               if (!isNaN(current) && !isNaN(max) && max > 0) {
+                monitor.maxBrightness = max
                 monitor.brightness = current / max
                 Logger.log("Brightness", "Internal brightness:", current + "/" + max + " =", monitor.brightness)
+                Logger.log("Brightness", "Using backlight device:", monitor.backlightDevice)
               }
             }
           }
@@ -158,9 +197,11 @@ Singleton {
       }
     }
 
+    readonly property real stepSize: Settings.data.brightness.brightnessStep / 100.0
+
     // Timer for debouncing rapid changes
     readonly property Timer timer: Timer {
-      interval: 200
+      interval: 100
       onTriggered: {
         if (!isNaN(monitor.queuedBrightness)) {
           monitor.setBrightness(monitor.queuedBrightness)
@@ -169,36 +210,42 @@ Singleton {
       }
     }
 
+    function setBrightnessDebounced(value: real): void {
+      monitor.queuedBrightness = value
+      timer.start()
+    }
+
     function increaseBrightness(): void {
-      var stepSize = Settings.data.brightness.brightnessStep / 100.0
-      setBrightnessDebounced(brightness + stepSize)
+      const value = !isNaN(monitor.queuedBrightness) ? monitor.queuedBrightness : monitor.brightness
+      setBrightnessDebounced(value + stepSize)
     }
 
     function decreaseBrightness(): void {
-      var stepSize = Settings.data.brightness.brightnessStep / 100.0
-      setBrightnessDebounced(monitor.brightness - stepSize)
+      const value = !isNaN(monitor.queuedBrightness) ? monitor.queuedBrightness : monitor.brightness
+      setBrightnessDebounced(value - stepSize)
     }
 
     function setBrightness(value: real): void {
       value = Math.max(0, Math.min(1, value))
       var rounded = Math.round(value * 100)
 
-      if (Math.round(brightness * 100) === rounded)
+      if (Math.round(monitor.brightness * 100) === rounded)
         return
 
-      if (isDdc && timer.running) {
-        queuedBrightness = value
+      if (timer.running) {
+        monitor.queuedBrightness = value
         return
       }
 
-      brightness = value
-      brightnessUpdated(brightness)
+      monitor.brightness = value
+      brightnessUpdated(monitor.brightness)
 
       if (isAppleDisplay) {
         Quickshell.execDetached(["asdbctl", "set", rounded])
       } else if (isDdc) {
         Quickshell.execDetached(["ddcutil", "-b", busNum, "setvcp", "10", rounded])
       } else {
+        monitor.ignoreNextChange = true
         Quickshell.execDetached(["brightnessctl", "s", rounded + "%"])
       }
 
@@ -207,19 +254,15 @@ Singleton {
       }
     }
 
-    function setBrightnessDebounced(value: real): void {
-      queuedBrightness = value
-      timer.restart()
-    }
-
     function initBrightness(): void {
       if (isAppleDisplay) {
         initProc.command = ["asdbctl", "get"]
       } else if (isDdc) {
         initProc.command = ["ddcutil", "-b", busNum, "getvcp", "10", "--brief"]
       } else {
-        // Internal backlight - try to find the first available backlight device
-        initProc.command = ["sh", "-c", "for dev in /sys/class/backlight/*; do if [ -f \"$dev/brightness\" ] && [ -f \"$dev/max_brightness\" ]; then echo \"$(cat $dev/brightness) $(cat $dev/max_brightness)\"; break; fi; done"]
+        // Internal backlight - find the first available backlight device and get its info
+        // This now returns: device_path, current_brightness, max_brightness (on separate lines)
+        initProc.command = ["sh", "-c", "for dev in /sys/class/backlight/*; do " + "  if [ -f \"$dev/brightness\" ] && [ -f \"$dev/max_brightness\" ]; then " + "    echo \"$dev\"; " + "    cat \"$dev/brightness\"; " + "    cat \"$dev/max_brightness\"; " + "    break; " + "  fi; " + "done"]
       }
       initProc.running = true
     }

@@ -1,4 +1,5 @@
 import qs.components
+import qs.components.effects
 import qs.components.images
 import qs.services
 import qs.config
@@ -35,31 +36,22 @@ Row {
             id: pfp
 
             anchors.fill: parent
-            path: `${Paths.stringify(Paths.home)}/.face`
+            path: `${Paths.home}/.face`
         }
 
         MouseArea {
             anchors.fill: parent
-
-            cursorShape: Qt.PointingHandCursor
             hoverEnabled: true
-
-            onClicked: {
-                root.visibilities.launcher = false;
-                root.state.facePicker.open();
-            }
 
             StyledRect {
                 anchors.fill: parent
 
-                color: Qt.alpha(Colours.palette.m3primary, 0.1)
+                color: Qt.alpha(Colours.palette.m3scrim, 0.5)
                 opacity: parent.containsMouse ? 1 : 0
 
                 Behavior on opacity {
-                    NumberAnimation {
-                        duration: Appearance.anim.durations.normal
-                        easing.type: Easing.BezierSpline
-                        easing.bezierCurve: Appearance.anim.curves.standard
+                    Anim {
+                        duration: Appearance.anim.durations.expressiveFastSpatial
                     }
                 }
             }
@@ -75,6 +67,15 @@ Row {
                 scale: parent.containsMouse ? 1 : 0.5
                 opacity: parent.containsMouse ? 1 : 0
 
+                StateLayer {
+                    color: Colours.palette.m3onPrimary
+
+                    function onClicked(): void {
+                        root.visibilities.launcher = false;
+                        root.state.facePicker.open();
+                    }
+                }
+
                 MaterialIcon {
                     id: selectIcon
 
@@ -87,18 +88,15 @@ Row {
                 }
 
                 Behavior on scale {
-                    NumberAnimation {
+                    Anim {
                         duration: Appearance.anim.durations.expressiveFastSpatial
-                        easing.type: Easing.BezierSpline
                         easing.bezierCurve: Appearance.anim.curves.expressiveFastSpatial
                     }
                 }
 
                 Behavior on opacity {
-                    NumberAnimation {
+                    Anim {
                         duration: Appearance.anim.durations.expressiveFastSpatial
-                        easing.type: Easing.BezierSpline
-                        easing.bezierCurve: Appearance.anim.curves.expressiveFastSpatial
                     }
                 }
             }
@@ -111,11 +109,35 @@ Row {
         anchors.verticalCenter: parent.verticalCenter
         spacing: Appearance.spacing.normal
 
-        InfoLine {
-            icon: SysInfo.osIcon
-            text: SysInfo.osPrettyName || SysInfo.osName
-            colour: Colours.palette.m3primary
-            materialIcon: false
+        Item {
+            id: line
+
+            implicitWidth: icon.implicitWidth + text.width + text.anchors.leftMargin
+            implicitHeight: Math.max(icon.implicitHeight, text.implicitHeight)
+
+            ColouredIcon {
+                id: icon
+
+                anchors.left: parent.left
+                anchors.leftMargin: (Config.dashboard.sizes.infoIconSize - implicitWidth) / 2
+
+                source: SysInfo.osLogo
+                implicitSize: Math.floor(Appearance.font.size.normal * 1.34)
+                colour: Colours.palette.m3primary
+            }
+
+            StyledText {
+                id: text
+
+                anchors.verticalCenter: icon.verticalCenter
+                anchors.left: icon.right
+                anchors.leftMargin: icon.anchors.leftMargin
+                text: `:  ${SysInfo.osPrettyName || SysInfo.osName}`
+                font.pointSize: Appearance.font.size.normal
+
+                width: Config.dashboard.sizes.infoWidth
+                elide: Text.ElideRight
+            }
         }
 
         InfoLine {
@@ -139,7 +161,6 @@ Row {
         required property string icon
         required property string text
         required property color colour
-        property bool materialIcon: true
 
         implicitWidth: icon.implicitWidth + text.width + text.anchors.leftMargin
         implicitHeight: Math.max(icon.implicitHeight, text.implicitHeight)
@@ -154,7 +175,6 @@ Row {
             text: line.icon
             color: line.colour
             font.pointSize: Appearance.font.size.normal
-            font.family: line.materialIcon ? Appearance.font.family.material : Appearance.font.family.sans
         }
 
         StyledText {

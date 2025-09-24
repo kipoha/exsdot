@@ -13,10 +13,7 @@ WlSessionLockSurface {
     required property WlSessionLock lock
     required property Pam pam
 
-    readonly property bool animating: initAnim.running || unlockAnim.running
-    property bool locked
-
-    Component.onCompleted: locked = true
+    readonly property alias unlocking: unlockAnim.running
 
     color: "transparent"
 
@@ -24,7 +21,6 @@ WlSessionLockSurface {
         target: root.lock
 
         function onUnlock(): void {
-            root.locked = false;
             unlockAnim.start();
         }
     }
@@ -43,11 +39,11 @@ WlSessionLockSurface {
             Anim {
                 target: lockBg
                 property: "radius"
-                to: lockContent.size / 4
+                to: lockContent.radius
             }
             Anim {
                 target: content
-                property: "centerScale"
+                property: "scale"
                 to: 0
                 duration: Appearance.anim.durations.expressiveDefaultSpatial
                 easing.bezierCurve: Appearance.anim.curves.expressiveDefaultSpatial
@@ -135,7 +131,7 @@ WlSessionLockSurface {
                 }
                 Anim {
                     target: content
-                    property: "centerScale"
+                    property: "scale"
                     to: 1
                     duration: Appearance.anim.durations.expressiveDefaultSpatial
                     easing.bezierCurve: Appearance.anim.curves.expressiveDefaultSpatial
@@ -172,8 +168,6 @@ WlSessionLockSurface {
 
         layer.enabled: true
         layer.effect: MultiEffect {
-            id: backgroundBlur
-
             autoPaddingEnabled: false
             blurEnabled: true
             blur: 1
@@ -186,6 +180,7 @@ WlSessionLockSurface {
         id: lockContent
 
         readonly property int size: lockIcon.implicitHeight + Appearance.padding.large * 4
+        readonly property int radius: size / 4 * Appearance.rounding.scale
 
         anchors.centerIn: parent
         implicitWidth: size
@@ -199,7 +194,7 @@ WlSessionLockSurface {
 
             anchors.fill: parent
             color: Colours.palette.m3surface
-            radius: parent.size / 4
+            radius: parent.radius
             opacity: Colours.transparency.enabled ? Colours.transparency.base : 1
 
             layer.enabled: true
@@ -223,14 +218,13 @@ WlSessionLockSurface {
         Content {
             id: content
 
+            anchors.centerIn: parent
+            width: (root.screen?.height ?? 0) * Config.lock.sizes.heightMult * Config.lock.sizes.ratio - Appearance.padding.large * 2
+            height: (root.screen?.height ?? 0) * Config.lock.sizes.heightMult - Appearance.padding.large * 2
+
             lock: root
             opacity: 0
+            scale: 0
         }
-    }
-
-    component Anim: NumberAnimation {
-        duration: Appearance.anim.durations.normal
-        easing.type: Easing.BezierSpline
-        easing.bezierCurve: Appearance.anim.curves.standard
     }
 }

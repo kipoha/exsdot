@@ -56,22 +56,27 @@ ColumnLayout {
         color: Colours.palette.m3secondary
     }
 
-    // Detail {
-    //     icon: "location_on"
-    //     text: qsTr("Address: %1").arg(`0x${root.client?.address}` ?? "unknown")
-    //     color: Colours.palette.m3primary
-    // }
+    Detail {
+        icon: "location_on"
+        property var adress: root.client?.layout.pos_in_scrolling_layout
+        text: qsTr("Address: %1, %2").arg(adress[0] ?? -1).arg(adress[1] ?? -1)
+        color: Colours.palette.m3primary
+    }
+    Loader {
+        active: root.client?.is_floating
+        sourceComponent: Detail {
+            icon: "location_searching"
+            property var pos: root.client?.layout.tile_pos_in_workspace_view
+            text: qsTr("Position: %1, %2").arg(pos[0] ?? -1).arg(pos[1] ?? -1)
+        }
+    }
 
-    // Detail {
-    //     icon: "location_searching"
-    //     text: qsTr("Position: %1, %2").arg(root.client?.at[0] ?? -1).arg(root.client?.at[1] ?? -1)
-    // }
-
-    // Detail {
-    //     icon: "resize"
-    //     text: qsTr("Size: %1 x %2").arg(root.client?.size[0] ?? -1).arg(root.client?.size[1] ?? -1)
-    //     color: Colours.palette.m3tertiary
-    // }
+    Detail {
+        icon: "resize"
+        property var size: root.client?.layout.window_size
+        text: qsTr("Size: %1 x %2").arg(size[0] ?? -1).arg(size[1] ?? -1)
+        color: Colours.palette.m3tertiary
+    }
 
     // TODO REFERENCE
     Detail {
@@ -81,7 +86,7 @@ ColumnLayout {
             const workspaceId = root.client?.workspace_id;
             if (workspaceId !== undefined && workspaceId !== null) {
                 // Find the workspace object in Niri's list
-                const ws = Niri.allWorkspaces.find(w => w.id === workspaceId);
+                const ws = Niri.currentOutputWorkspaces.find(w => w.id === workspaceId);
                 return qsTr("Workspace: %1 (%2)").arg(ws?.name ?? "unknown").arg(workspaceId);
             }
             return qsTr("Workspace: unknown");
@@ -89,15 +94,17 @@ ColumnLayout {
         color: Colours.palette.m3secondary
     }
 
-    // Detail {
-    //     icon: "desktop_windows"
-    //     text: {
-    //         const mon = root.client?.monitor;
-    //         if (mon)
-    //             return qsTr("Monitor: %1 (%2) at %3, %4").arg(mon.name).arg(mon.id).arg(mon.x).arg(mon.y);
-    //         return qsTr("Monitor: unknown");
-    //     }
-    // }
+    Detail {
+        icon: "desktop_windows"
+        text: {
+            const mon = Niri.outputs[Niri.focusedMonitorName];
+            const modes = Niri.outputs[Niri.focusedMonitorName].modes[0];
+
+            if (mon)
+                return qsTr("Monitor: %1 (%3px x %4px) @(%2) #(%5)").arg(mon.name).arg(modes.refresh_rate).arg(modes.width).arg(modes.height).arg(mon.logical.scale);
+            return qsTr("Monitor: unknown");
+        }
+    }
 
     // Detail {
     //     icon: "page_header"
@@ -105,10 +112,10 @@ ColumnLayout {
     //     color: Colours.palette.m3tertiary
     // }
 
-    // Detail {
-    //     icon: "category"
-    //     text: qsTr("Initial class: %1").arg(root.client?.initialClass ?? "unknown")
-    // }
+    Detail {
+        icon: "category"
+        text: qsTr("Initial class: %1").arg(root.client?.initialClass ?? "unknown")
+    }
 
     Detail {
         icon: "account_tree"
@@ -122,10 +129,10 @@ ColumnLayout {
         color: Colours.palette.m3secondary
     }
 
-    Detail {
-        icon: "gradient"
-        text: qsTr("Xwayland: %1").arg(root.client?.xwayland ? "yes" : "no")
-    }
+    // Detail {
+    //     icon: "gradient"
+    //     text: qsTr("Xwayland: %1").arg(root.client?.xwayland ? "yes" : "no")
+    // }
 
     // Detail {
     //     icon: "keep"

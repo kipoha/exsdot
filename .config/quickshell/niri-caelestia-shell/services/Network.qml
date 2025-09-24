@@ -12,8 +12,6 @@ Singleton {
     property bool wifiEnabled: true
     readonly property bool scanning: rescanProc.running
 
-    reloadableId: "network"
-
     function enableWifi(enabled: bool): void {
         const cmd = enabled ? "on" : "off";
         enableWifiProc.exec(["nmcli", "radio", "wifi", cmd]);
@@ -57,8 +55,8 @@ Singleton {
         running: true
         command: ["nmcli", "radio", "wifi"]
         environment: ({
-                LANG: "C",
-                LC_ALL: "C"
+                LANG: "C.UTF-8",
+                LC_ALL: "C.UTF-8"
             })
         stdout: StdioCollector {
             onStreamFinished: {
@@ -110,8 +108,8 @@ Singleton {
         running: true
         command: ["nmcli", "-g", "ACTIVE,SIGNAL,FREQ,SSID,BSSID,SECURITY", "d", "w"]
         environment: ({
-                LANG: "C",
-                LC_ALL: "C"
+                LANG: "C.UTF-8",
+                LC_ALL: "C.UTF-8"
             })
         stdout: StdioCollector {
             onStreamFinished: {

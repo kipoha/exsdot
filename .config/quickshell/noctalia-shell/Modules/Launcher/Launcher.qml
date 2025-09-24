@@ -11,20 +11,13 @@ NPanel {
   id: root
 
   // Panel configuration
-  panelWidth: {
-    var w = Math.round(Math.max(screen?.width * 0.3, 500) * scaling)
-    w = Math.min(w, screen?.width - Style.marginL * 2)
-    return w
-  }
-  panelHeight: {
-    var h = Math.round(Math.max(screen?.height * 0.5, 600) * scaling)
-    h = Math.min(h, screen?.height - Style.barHeight * scaling - Style.marginL * 2)
-    return h
-  }
+  preferredWidth: 500
+  preferredWidthRatio: 0.3
+  preferredHeight: 600
+  preferredHeightRatio: 0.5
 
   panelKeyboardFocus: true
-  panelBackgroundColor: Qt.rgba(Color.mSurface.r, Color.mSurface.g, Color.mSurface.b,
-                                Settings.data.appLauncher.backgroundOpacity)
+  panelBackgroundColor: Qt.alpha(Color.mSurface, Settings.data.appLauncher.backgroundOpacity)
 
   // Positioning
   readonly property string launcherPosition: Settings.data.appLauncher.position
@@ -142,9 +135,9 @@ NPanel {
     const clipboardPlugin = Qt.createComponent("Plugins/ClipboardPlugin.qml").createObject(this)
     if (clipboardPlugin) {
       registerPlugin(clipboardPlugin)
-      Logger.log("Launcher", "Registered: clipboardPlugin")
+      Logger.log("Launcher", "Registered: ClipboardPlugin")
     } else {
-      Logger.error("Launcher", "Failed to load clipboardPlugin")
+      Logger.error("Launcher", "Failed to load ClipboardPlugin")
     }
   }
 
@@ -203,72 +196,96 @@ NPanel {
       }
     }
 
+    Shortcut {
+      sequence: "Ctrl+K"
+      onActivated: ui.selectPrevious()
+      enabled: root.opened && searchInput.inputItem && searchInput.inputItem.activeFocus
+    }
+
+    Shortcut {
+      sequence: "Ctrl+J"
+      onActivated: ui.selectNext()
+      enabled: root.opened && searchInput.inputItem && searchInput.inputItem.activeFocus
+    }
+
+    Shortcut {
+      sequence: "PgDown" // or "PageDown"
+      onActivated: ui.selectNextPage()
+      enabled: root.opened && searchInput.inputItem && searchInput.inputItem.activeFocus
+    }
+
+    Shortcut {
+      sequence: "PgUp" // or "PageUp"
+      onActivated: ui.selectPreviousPage()
+      enabled: root.opened && searchInput.inputItem && searchInput.inputItem.activeFocus
+    }
+
+    Shortcut {
+      sequence: "Home"
+      onActivated: ui.selectFirst()
+      enabled: root.opened && searchInput.inputItem && searchInput.inputItem.activeFocus
+    }
+
+    Shortcut {
+      sequence: "End"
+      onActivated: ui.selectLast()
+      enabled: root.opened && searchInput.inputItem && searchInput.inputItem.activeFocus
+    }
+
     ColumnLayout {
       anchors.fill: parent
       anchors.margins: Style.marginL * scaling
       spacing: Style.marginM * scaling
 
-      Item {
-        id: searchInputWrap
+      NTextInput {
+        id: searchInput
         Layout.fillWidth: true
-        Layout.preferredHeight: Math.round(Style.barHeight * scaling)
 
-        NTextInput {
-          id: searchInput
-          anchors.fill: parent
-          inputMaxWidth: Number.MAX_SAFE_INTEGER
+        fontSize: Style.fontSizeL * scaling
+        fontWeight: Style.fontWeightSemiBold
 
-          fontSize: Style.fontSizeL * scaling
-          fontWeight: Style.fontWeightSemiBold
+        text: searchText
+        placeholderText: "Search entries... or use > for commands"
 
-          text: searchText
-          placeholderText: "Search entries... or use > for commands"
+        onTextChanged: searchText = text
 
-          Component.onCompleted: {
-            if (searchInput.inputItem && searchInput.inputItem.visible) {
-              searchInput.inputItem.forceActiveFocus()
-            }
+        Component.onCompleted: {
+          if (searchInput.inputItem && searchInput.inputItem.visible) {
+            searchInput.inputItem.forceActiveFocus()
+
+            // Override the TextField's default Home/End behavior
+            searchInput.inputItem.Keys.priority = Keys.BeforeItem
+            searchInput.inputItem.Keys.onPressed.connect(function (event) {
+              // Intercept Home and End BEFORE the TextField handles them
+              if (event.key === Qt.Key_Home) {
+                ui.selectFirst()
+                event.accepted = true
+                return
+              } else if (event.key === Qt.Key_End) {
+                ui.selectLast()
+                event.accepted = true
+                return
+              }
+            })
+            searchInput.inputItem.Keys.onDownPressed.connect(function (event) {
+              ui.selectNext()
+            })
+            searchInput.inputItem.Keys.onUpPressed.connect(function (event) {
+              ui.selectPrevious()
+            })
+            searchInput.inputItem.Keys.onReturnPressed.connect(function (event) {
+              ui.activate()
+            })
           }
-
-          onTextChanged: searchText = text
-          Keys.onEscapePressed: root.close()
-          Keys.onReturnPressed: ui.activate()
-          Keys.onDownPressed: ui.selectNext()
-          Keys.onUpPressed: ui.selectPrevious()
-          Keys.onPressed: event => {
-                            if (event.key === Qt.Key_PageDown) {
-                              ui.selectNextPage()
-                              event.accepted = true
-                            } else if (event.key === Qt.Key_PageUp) {
-                              ui.selectPreviousPage()
-                              event.accepted = true
-                            } else if (event.key === Qt.Key_Home) {
-                              ui.selectFirst()
-                              event.accepted = true
-                            } else if (event.key === Qt.Key_End) {
-                              ui.selectLast()
-                              event.accepted = true
-                            }
-
-                            if (event.modifiers & Qt.ControlModifier) {
-                              switch (event.key) {
-                                case Qt.Key_K:
-                                ui.selectPrevious()
-                                event.accepted = true
-                                break
-                                case Qt.Key_J:
-                                ui.selectNext()
-                                event.accepted = true
-                                break
-                              }
-                            }
-                          }
         }
       }
 
       // Results list
-      ListView {
+      NListView {
         id: resultsList
+
+        horizontalPolicy: ScrollBar.AlwaysOff
+        verticalPolicy: ScrollBar.AsNeeded
 
         Layout.fillWidth: true
         Layout.fillHeight: true
@@ -284,10 +301,6 @@ NPanel {
           if (currentIndex >= 0) {
             positionViewAtIndex(currentIndex, ListView.Contain)
           }
-        }
-
-        ScrollBar.vertical: ScrollBar {
-          policy: ScrollBar.AsNeeded
         }
 
         delegate: Rectangle {
@@ -384,7 +397,7 @@ NPanel {
                 sourceComponent: Component {
                   IconImage {
                     anchors.fill: parent
-                    source: modelData.icon ? Icons.iconFromName(modelData.icon, "application-x-executable") : ""
+                    source: modelData.icon ? ThemeIcons.iconFromName(modelData.icon, "application-x-executable") : ""
                     visible: modelData.icon && source !== ""
                     asynchronous: true
                   }
@@ -460,7 +473,7 @@ NPanel {
             cursorShape: Qt.PointingHandCursor
             onClicked: {
               selectedIndex = index
-              root.activate()
+              ui.activate()
             }
           }
         }

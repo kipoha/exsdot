@@ -168,7 +168,7 @@ RowLayout {
                 ctx.reset();
 
                 ctx.lineWidth = res.thickness;
-                ctx.lineCap = "round";
+                ctx.lineCap = Appearance.rounding.scale === 0 ? "square" : "round";
 
                 const radius = (Math.min(width, height) - ctx.lineWidth) / 2;
                 const cx = centerX;
@@ -201,51 +201,27 @@ RowLayout {
         }
 
         Behavior on value1 {
-            NumberAnimation {
-                duration: Appearance.anim.durations.normal
-                easing.type: Easing.BezierSpline
-                easing.bezierCurve: Appearance.anim.curves.standard
-            }
+            Anim {}
         }
 
         Behavior on value2 {
-            NumberAnimation {
-                duration: Appearance.anim.durations.normal
-                easing.type: Easing.BezierSpline
-                easing.bezierCurve: Appearance.anim.curves.standard
-            }
+            Anim {}
         }
 
         Behavior on fg1 {
-            ColorAnimation {
-                duration: Appearance.anim.durations.normal
-                easing.type: Easing.BezierSpline
-                easing.bezierCurve: Appearance.anim.curves.standard
-            }
+            CAnim {}
         }
 
         Behavior on fg2 {
-            ColorAnimation {
-                duration: Appearance.anim.durations.normal
-                easing.type: Easing.BezierSpline
-                easing.bezierCurve: Appearance.anim.curves.standard
-            }
+            CAnim {}
         }
 
         Behavior on bg1 {
-            ColorAnimation {
-                duration: Appearance.anim.durations.normal
-                easing.type: Easing.BezierSpline
-                easing.bezierCurve: Appearance.anim.curves.standard
-            }
+            CAnim {}
         }
 
         Behavior on bg2 {
-            ColorAnimation {
-                duration: Appearance.anim.durations.normal
-                easing.type: Easing.BezierSpline
-                easing.bezierCurve: Appearance.anim.curves.standard
-            }
+            CAnim {}
         }
     }
 }

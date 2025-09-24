@@ -62,6 +62,7 @@ Singleton {
     function onMutedChanged() {
       root._muted = (sink?.audio.muted ?? true)
       Logger.log("AudioService", "OnMuteChanged:", root._muted)
+      ToastService.showNotice("Audio Output", root._muted ? "Muted" : "Unmuted")
     }
   }
 
@@ -79,6 +80,7 @@ Singleton {
     function onMutedChanged() {
       root._inputMuted = (source?.audio.muted ?? true)
       Logger.log("AudioService", "OnInputMuteChanged:", root._inputMuted)
+      ToastService.showNotice("Microphone", root._inputMuted ? "Muted" : "Unmuted")
     }
   }
 
@@ -94,14 +96,14 @@ Singleton {
     if (sink?.ready && sink?.audio) {
       // Clamp it accordingly
       sink.audio.muted = false
-      sink.audio.volume = Math.max(0, Math.min(1, newVolume))
+      sink.audio.volume = Math.max(0, Math.min(Settings.data.audio.volumeOverdrive ? 1.5 : 1.0, newVolume))
       //Logger.log("AudioService", "SetVolume", sink.audio.volume);
     } else {
       Logger.warn("AudioService", "No sink available")
     }
   }
 
-  function setMuted(muted: bool) {
+  function setOutputMuted(muted: bool) {
     if (sink?.ready && sink?.audio) {
       sink.audio.muted = muted
     } else {
@@ -113,7 +115,7 @@ Singleton {
     if (source?.ready && source?.audio) {
       // Clamp it accordingly
       source.audio.muted = false
-      source.audio.volume = Math.max(0, Math.min(1, newVolume))
+      source.audio.volume = Math.max(0, Math.min(Settings.data.audio.volumeOverdrive ? 1.5 : 1.0, newVolume))
     } else {
       Logger.warn("AudioService", "No source available")
     }
@@ -129,9 +131,15 @@ Singleton {
 
   function setAudioSink(newSink: PwNode): void {
     Pipewire.preferredDefaultAudioSink = newSink
+    // Volume is changed by the sink change
+    root._volume = newSink?.audio?.volume ?? 0
+    root._muted = !!newSink?.audio?.muted
   }
 
   function setAudioSource(newSource: PwNode): void {
     Pipewire.preferredDefaultAudioSource = newSource
+    // Volume is changed by the source change
+    root._inputVolume = newSource?.audio?.volume ?? 0
+    root._inputMuted = !!newSource?.audio?.muted
   }
 }

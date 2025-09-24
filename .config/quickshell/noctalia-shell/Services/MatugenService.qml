@@ -47,6 +47,11 @@ Singleton {
 
   // Generate colors using current wallpaper and settings
   function generateFromWallpaper() {
+    if (!Settings.isLoaded) {
+      Logger.log("Matugen", "Settings not loaded yet, skipping wallpaper color generation")
+      return
+    }
+
     Logger.log("Matugen", "Generating from wallpaper on screen:", Screen.name)
     var wp = WallpaperService.getWallpaper(Screen.name).replace(/'/g, "'\\''")
     if (wp === "") {
@@ -61,10 +66,8 @@ Singleton {
     var extraUser = (Settings.configDir + "matugen.d").replace(/'/g, "'\\''")
 
     // Build the main script
-    var script = "cat > '" + pathEsc + "' << 'EOF'\n" + content + "EOF\n" + "for d in '" + extraRepo + "' '" + extraUser
-        + "'; do\n" + "  if [ -d \"$d\" ]; then\n"
-        + "    for f in \"$d\"/*.toml; do\n" + "      [ -f \"$f\" ] && { echo; echo \"# extra: $f\"; cat \"$f\"; } >> '"
-        + pathEsc + "'\n" + "    done\n" + "  fi\n" + "done\n" + "matugen image '" + wp + "' --config '" + pathEsc + "' --mode " + mode
+    var script = "cat > '" + pathEsc + "' << 'EOF'\n" + content + "EOF\n" + "for d in '" + extraRepo + "' '" + extraUser + "'; do\n" + "  if [ -d \"$d\" ]; then\n" + "    for f in \"$d\"/*.toml; do\n" + "      [ -f \"$f\" ] && { echo; echo \"# extra: $f\"; cat \"$f\"; } >> '" + pathEsc + "'\n" + "    done\n" + "  fi\n" + "done\n" + "matugen image '"
+        + wp + "' --config '" + pathEsc + "' --mode " + mode
 
     // Add user config execution if enabled
     if (Settings.data.matugen.enableUserTemplates) {

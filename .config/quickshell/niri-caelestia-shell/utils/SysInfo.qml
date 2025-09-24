@@ -11,8 +11,8 @@ Singleton {
     property string osPrettyName
     property string osId
     property list<string> osIdLike
-    property string logo
-    property string osIcon: ""
+    property string osLogo: `file://${Quickshell.shellDir}/assets/logo.svg`
+    property bool isDefaultLogo: true
 
     property string uptime
     readonly property string user: Quickshell.env("USER")
@@ -32,17 +32,11 @@ Singleton {
             root.osPrettyName = fd("PRETTY_NAME");
             root.osId = fd("ID");
             root.osIdLike = fd("ID_LIKE").split(" ");
-            root.logo = fd("LOGO");
 
-            const osIcons = Icons.osIcons;
-            if (osIcons.hasOwnProperty(root.osId)) {
-                root.osIcon = osIcons[root.osId];
-            } else {
-                for (const id of root.osIdLike) {
-                    if (osIcons.hasOwnProperty(id)) {
-                        root.osIcon = osIcons[id];
-                    }
-                }
+            const logo = Quickshell.iconPath(fd("LOGO"), true);
+            if (logo) {
+                root.osLogo = logo;
+                root.isDefaultLogo = false;
             }
         }
     }

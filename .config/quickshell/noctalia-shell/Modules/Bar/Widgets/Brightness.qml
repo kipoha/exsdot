@@ -1,7 +1,8 @@
 import QtQuick
 import Quickshell
 import qs.Commons
-import qs.Modules.SettingsPanel
+import qs.Modules.Bar.Extras
+import qs.Modules.Settings
 import qs.Services
 import qs.Widgets
 
@@ -10,9 +11,26 @@ Item {
 
   property ShellScreen screen
   property real scaling: 1.0
-  property string barSection: ""
-  property int sectionWidgetIndex: 0
+
+  // Widget properties passed from Bar.qml for per-instance settings
+  property string widgetId: ""
+  property string section: ""
+  property int sectionWidgetIndex: -1
   property int sectionWidgetsCount: 0
+
+  property var widgetMetadata: BarWidgetRegistry.widgetMetadata[widgetId]
+  property var widgetSettings: {
+    if (section && sectionWidgetIndex >= 0) {
+      var widgets = Settings.data.bar.widgets[section]
+      if (widgets && sectionWidgetIndex < widgets.length) {
+        return widgets[sectionWidgetIndex]
+      }
+    }
+    return {}
+  }
+
+  readonly property bool isBarVertical: Settings.data.bar.position === "left" || Settings.data.bar.position === "right"
+  readonly property string displayMode: (widgetSettings.displayMode !== undefined) ? widgetSettings.displayMode : widgetMetadata.displayMode
 
   // Used to avoid opening the pill on Quickshell startup
   property bool firstBrightnessReceived: false
@@ -28,8 +46,7 @@ Item {
   function getIcon() {
     var monitor = getMonitor()
     var brightness = monitor ? monitor.brightness : 0
-    return brightness <= 0 ? "brightness_1" : brightness < 0.33 ? "brightness_low" : brightness
-                                                                  < 0.66 ? "brightness_medium" : "brightness_high"
+    return brightness <= 0.5 ? "brightness-low" : "brightness-high"
   }
 
   // Connection used to open the pill when brightness changes
@@ -37,46 +54,45 @@ Item {
     target: getMonitor()
     ignoreUnknownSignals: true
     function onBrightnessUpdated() {
-      Logger.log("Bar-Brightness", "OnBrightnessUpdated")
-      var monitor = getMonitor()
-      if (!monitor)
-        return
-      var currentBrightness = monitor.brightness
-
-      // Ignore if this is the first time or if brightness hasn't actually changed
+      // Ignore if this is the first time we receive an update.
+      // Most likely service just kicked off.
       if (!firstBrightnessReceived) {
         firstBrightnessReceived = true
-        monitor.lastBrightness = currentBrightness
         return
       }
 
-      // Only show pill if brightness actually changed (not just loaded from settings)
-      if (Math.abs(currentBrightness - monitor.lastBrightness) > 0.1) {
-        pill.show()
-      }
-
-      monitor.lastBrightness = currentBrightness
+      pill.show()
+      hideTimerAfterChange.restart()
     }
   }
 
-  NPill {
+  Timer {
+    id: hideTimerAfterChange
+    interval: 2500
+    running: false
+    repeat: false
+    onTriggered: pill.hide()
+  }
+
+  BarPill {
     id: pill
 
-    rightOpen: BarWidgetRegistry.getNPillDirection(root)
+    compact: (Settings.data.bar.density === "compact")
+    rightOpen: BarService.getPillDirection(root)
     icon: getIcon()
-    iconCircleColor: Color.mPrimary
-    collapsedIconColor: Color.mOnSurface
     autoHide: false // Important to be false so we can hover as long as we want
     text: {
       var monitor = getMonitor()
-      return monitor ? (Math.round(monitor.brightness * 100) + "%") : ""
+      return monitor ? Math.round(monitor.brightness * 100) : ""
     }
+    suffix: text.length > 0 ? "%" : "-"
+    forceOpen: displayMode === "alwaysShow"
+    forceClose: displayMode === "alwaysHide"
     tooltipText: {
       var monitor = getMonitor()
       if (!monitor)
         return ""
-      return "Brightness: " + Math.round(monitor.brightness * 100) + "%\nMethod: " + monitor.method
-          + "\nLeft click for advanced settings.\nScroll up/down to change brightness."
+      return "Brightness: " + Math.round(monitor.brightness * 100) + "%\nRight click for settings.\nScroll to modify brightness."
     }
 
     onWheel: function (angle) {
@@ -92,8 +108,14 @@ Item {
 
     onClicked: {
       var settingsPanel = PanelService.getPanel("settingsPanel")
-      settingsPanel.requestedTab = SettingsPanel.Tab.Brightness
-      settingsPanel.open(screen)
+      settingsPanel.requestedTab = SettingsPanel.Tab.Display
+      settingsPanel.open()
+    }
+
+    onRightClicked: {
+      var settingsPanel = PanelService.getPanel("settingsPanel")
+      settingsPanel.requestedTab = SettingsPanel.Tab.Display
+      settingsPanel.open()
     }
   }
 }

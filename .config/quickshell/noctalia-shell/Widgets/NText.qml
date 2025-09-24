@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Layouts
 import qs.Commons
 import qs.Services
 import qs.Widgets
@@ -13,4 +14,7 @@ Text {
   font.kerning: true
   color: Color.mOnSurface
   renderType: Text.QtRendering
+  verticalAlignment: Text.AlignVCenter
+  elide: Text.ElideRight
+  wrapMode: Text.NoWrap
 }

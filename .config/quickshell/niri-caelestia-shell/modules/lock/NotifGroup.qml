@@ -31,6 +31,11 @@ StyledRect {
     radius: Appearance.rounding.normal
     color: root.urgency === "critical" ? Colours.palette.m3secondaryContainer : Colours.layer(Colours.palette.m3surfaceContainerHigh, 2)
 
+    RetainableLock {
+        object: root.notifs[0]?.notiftication ?? null
+        locked: true
+    }
+
     RowLayout {
         id: content
 
@@ -62,15 +67,11 @@ StyledRect {
             Component {
                 id: appIconComp
 
-                IconImage {
+                ColouredIcon {
                     implicitSize: Math.round(Config.notifs.sizes.image * 0.6)
                     source: Quickshell.iconPath(root.appIcon)
-                    asynchronous: true
-
+                    colour: root.urgency === "critical" ? Colours.palette.m3onError : root.urgency === "low" ? Colours.palette.m3onSurface : Colours.palette.m3onSecondaryContainer
                     layer.enabled: root.appIcon.endsWith("symbolic")
-                    layer.effect: Colouriser {
-                        colorizationColor: root.urgency === "critical" ? Colours.palette.m3onError : root.urgency === "low" ? Colours.palette.m3onSurface : Colours.palette.m3onSecondaryContainer
-                    }
                 }
             }
 
@@ -78,7 +79,7 @@ StyledRect {
                 id: materialIconComp
 
                 MaterialIcon {
-                    text: Icons.getNotifIcon(root.notifs[0].summary.toLowerCase(), root.urgency)
+                    text: Icons.getNotifIcon(root.notifs[0]?.summary, root.urgency)
                     color: root.urgency === "critical" ? Colours.palette.m3onError : root.urgency === "low" ? Colours.palette.m3onSurface : Colours.palette.m3onSecondaryContainer
                     font.pointSize: Appearance.font.size.large
                 }
@@ -109,16 +110,12 @@ StyledRect {
                     color: root.urgency === "critical" ? Colours.palette.m3error : root.urgency === "low" ? Colours.palette.m3surfaceContainerHighest : Colours.palette.m3secondaryContainer
                     radius: Appearance.rounding.full
 
-                    IconImage {
+                    ColouredIcon {
                         anchors.centerIn: parent
                         implicitSize: Math.round(Config.notifs.sizes.badge * 0.6)
                         source: Quickshell.iconPath(root.appIcon)
-                        asynchronous: true
-
+                        colour: root.urgency === "critical" ? Colours.palette.m3onError : root.urgency === "low" ? Colours.palette.m3onSurface : Colours.palette.m3onSecondaryContainer
                         layer.enabled: root.appIcon.endsWith("symbolic")
-                        layer.effect: Colouriser {
-                            colorizationColor: root.urgency === "critical" ? Colours.palette.m3onError : root.urgency === "low" ? Colours.palette.m3onSurface : Colours.palette.m3onSecondaryContainer
-                        }
                     }
                 }
             }
@@ -145,7 +142,7 @@ StyledRect {
 
                 StyledText {
                     animate: true
-                    text: root.notifs[0].timeStr
+                    text: root.notifs[0]?.timeStr ?? ""
                     color: Colours.palette.m3outline
                     font.pointSize: Appearance.font.size.small
                 }
@@ -290,6 +287,11 @@ StyledRect {
         }
         color: root.urgency === "critical" ? Colours.palette.m3onSecondaryContainer : Colours.palette.m3onSurface
 
+        RetainableLock {
+            object: notifLine.modelData.notification
+            locked: true
+        }
+
         TextMetrics {
             id: metrics
 
@@ -299,11 +301,5 @@ StyledRect {
             elideWidth: notifLine.width
             elide: Text.ElideRight
         }
-    }
-
-    component Anim: NumberAnimation {
-        duration: Appearance.anim.durations.normal
-        easing.type: Easing.BezierSpline
-        easing.bezierCurve: Appearance.anim.curves.standard
     }
 }

@@ -8,89 +8,140 @@
   ddcutil,
   brightnessctl,
   app2unit,
-  cava,
   networkmanager,
   lm_sensors,
-  grim,
   swappy,
   wl-clipboard,
   libqalculate,
-  inotify-tools,
-  bluez,
+  fftw,
   bash,
   hyprland,
-  coreutils,
-  findutils,
-  file,
   material-symbols,
   rubik,
   nerd-fonts,
-  gcc,
+  qt6,
   quickshell,
   aubio,
+  libcava,
   pipewire,
+  xkeyboard-config,
+  cmake,
+  ninja,
+  pkg-config,
   caelestia-cli,
+  debug ? false,
   withCli ? false,
+  extraRuntimeDeps ? [],
 }: let
+  version = "1.0.0";
+
   runtimeDeps =
     [
       fish
       ddcutil
       brightnessctl
       app2unit
-      cava
       networkmanager
       lm_sensors
-      grim
       swappy
       wl-clipboard
       libqalculate
-      inotify-tools
-      bluez
       bash
       hyprland
-      coreutils
-      findutils
-      file
     ]
+    ++ extraRuntimeDeps
     ++ lib.optional withCli caelestia-cli;
 
   fontconfig = makeFontsConf {
     fontDirectories = [material-symbols rubik nerd-fonts.caskaydia-cove];
   };
+
+  cmakeVersionFlags = [
+    (lib.cmakeFeature "VERSION" version)
+    (lib.cmakeFeature "GIT_REVISION" rev)
+    (lib.cmakeFeature "DISTRIBUTOR" "nix-flake")
+  ];
+
+  extras = stdenv.mkDerivation {
+    name = "caelestia-extras${lib.optionalString debug "-debug"}";
+    src = lib.fileset.toSource {
+      root = ./..;
+      fileset = lib.fileset.union ./../CMakeLists.txt ./../extras;
+    };
+
+    nativeBuildInputs = [cmake ninja];
+
+    cmakeFlags =
+      [
+        (lib.cmakeFeature "ENABLE_MODULES" "extras")
+        (lib.cmakeFeature "INSTALL_LIBDIR" "${placeholder "out"}/lib")
+      ]
+      ++ cmakeVersionFlags;
+  };
+
+  plugin = stdenv.mkDerivation {
+    name = "caelestia-qml-plugin${lib.optionalString debug "-debug"}";
+    src = lib.fileset.toSource {
+      root = ./..;
+      fileset = lib.fileset.union ./../CMakeLists.txt ./../plugin;
+    };
+
+    nativeBuildInputs = [cmake ninja pkg-config];
+    buildInputs = [qt6.qtbase qt6.qtdeclarative fftw qt6.qtmultimedia libqalculate pipewire aubio libcava];
+
+    dontWrapQtApps = true;
+    cmakeFlags =
+      [
+        (lib.cmakeFeature "ENABLE_MODULES" "plugin")
+        (lib.cmakeFeature "INSTALL_QMLDIR" qt6.qtbase.qtQmlPrefix)
+      ]
+      ++ cmakeVersionFlags;
+  };
 in
   stdenv.mkDerivation {
-    pname = "caelestia-shell";
-    version = "${rev}";
+    inherit version;
+    pname = "caelestia-shell${lib.optionalString debug "-debug"}";
     src = ./..;
 
-    nativeBuildInputs = [gcc makeWrapper];
-    buildInputs = [quickshell aubio pipewire];
+    nativeBuildInputs = [cmake ninja makeWrapper qt6.wrapQtAppsHook];
+    buildInputs = [quickshell extras plugin xkeyboard-config qt6.qtbase];
     propagatedBuildInputs = runtimeDeps;
 
-    buildPhase = ''
-      mkdir -p bin
-      g++ -std=c++17 -Wall -Wextra \
-      	-I${pipewire.dev}/include/pipewire-0.3 \
-      	-I${pipewire.dev}/include/spa-0.2 \
-      	-I${aubio}/include/aubio \
-      	assets/beat_detector.cpp \
-      	-o bin/beat_detector \
-      	-lpipewire-0.3 -laubio
+    cmakeBuildType =
+      if debug
+      then "Debug"
+      else "RelWithDebInfo";
+    cmakeFlags =
+      [
+        (lib.cmakeFeature "ENABLE_MODULES" "shell")
+        (lib.cmakeFeature "INSTALL_QSCONFDIR" "${placeholder "out"}/share/caelestia-shell")
+      ]
+      ++ cmakeVersionFlags;
+
+    dontStrip = debug;
+
+    prePatch = ''
+      substituteInPlace assets/pam.d/fprint \
+        --replace-fail pam_fprintd.so /run/current-system/sw/lib/security/pam_fprintd.so
+      substituteInPlace shell.qml \
+        --replace-fail 'ShellRoot {' 'ShellRoot {  settings.watchFiles: false'
     '';
 
-    installPhase = ''
-      install -Dm755 bin/beat_detector $out/bin/beat_detector
-
-      mkdir -p $out/share/caelestia-shell
-      cp -r ./* $out/share/caelestia-shell
-
+    postInstall = ''
       makeWrapper ${quickshell}/bin/qs $out/bin/caelestia-shell \
       	--prefix PATH : "${lib.makeBinPath runtimeDeps}" \
       	--set FONTCONFIG_FILE "${fontconfig}" \
-      	--set CAELESTIA_BD_PATH $out/bin/beat_detector \
+      	--set CAELESTIA_LIB_DIR ${extras}/lib \
+        --set CAELESTIA_XKB_RULES_PATH ${xkeyboard-config}/share/xkeyboard-config-2/rules/base.lst \
       	--add-flags "-p $out/share/caelestia-shell"
+
+      mkdir -p $out/lib
+      ln -s ${extras}/lib/* $out/lib/
     '';
+
+    passthru = {
+      inherit plugin extras;
+    };
 
     meta = {
       description = "A very segsy desktop shell";

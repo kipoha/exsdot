@@ -11,34 +11,114 @@ Singleton {
   // Widget registry object mapping widget names to components
   property var widgets: ({
                            "ActiveWindow": activeWindowComponent,
-                           "ArchUpdater": archUpdaterComponent,
                            "Battery": batteryComponent,
                            "Bluetooth": bluetoothComponent,
                            "Brightness": brightnessComponent,
                            "Clock": clockComponent,
-                           "DarkModeToggle": darkModeToggle,
+                           "ControlCenter": controlCenterComponent,
+                           "CustomButton": customButtonComponent,
+                           "DarkMode": darkMode,
+                           "KeepAwake": keepAwakeComponent,
                            "KeyboardLayout": keyboardLayoutComponent,
                            "MediaMini": mediaMiniComponent,
                            "Microphone": microphoneComponent,
                            "NightLight": nightLightComponent,
                            "NotificationHistory": notificationHistoryComponent,
                            "PowerProfile": powerProfileComponent,
-                           "ScreenRecorderIndicator": screenRecorderIndicatorComponent,
-                           "SidePanelToggle": sidePanelToggleComponent,
+                           "ScreenRecorder": screenRecorderComponent,
+                           "SessionMenu": sessionMenuComponent,
+                           "Spacer": spacerComponent,
                            "SystemMonitor": systemMonitorComponent,
                            "Taskbar": taskbarComponent,
                            "Tray": trayComponent,
                            "Volume": volumeComponent,
                            "WiFi": wiFiComponent,
+                           "WallpaperSelector": wallpaperSelectorComponent,
                            "Workspace": workspaceComponent
                          })
+
+  property var widgetMetadata: ({
+                                  "ActiveWindow": {
+                                    "allowUserSettings": true,
+                                    "showIcon": true
+                                  },
+                                  "Battery": {
+                                    "allowUserSettings": true,
+                                    "displayMode": "onhover",
+                                    "warningThreshold": 30
+                                  },
+                                  "Brightness": {
+                                    "allowUserSettings": true,
+                                    "displayMode": "onhover"
+                                  },
+                                  "Clock": {
+                                    "allowUserSettings": true,
+                                    "usePrimaryColor": true,
+                                    "useMonospacedFont": true,
+                                    "formatHorizontal": "HH:mm ddd, MMM dd",
+                                    "formatVertical": "HH mm - dd MM"
+                                  },
+                                  "CustomButton": {
+                                    "allowUserSettings": true,
+                                    "icon": "heart",
+                                    "leftClickExec": "",
+                                    "rightClickExec": "",
+                                    "middleClickExec": "",
+                                    "textCommand": "",
+                                    "textIntervalMs": 3000
+                                  },
+                                  "Microphone": {
+                                    "allowUserSettings": true,
+                                    "displayMode": "onhover"
+                                  },
+                                  "NotificationHistory": {
+                                    "allowUserSettings": true,
+                                    "showUnreadBadge": true,
+                                    "hideWhenZero": true
+                                  },
+                                  "Spacer": {
+                                    "allowUserSettings": true,
+                                    "width": 20
+                                  },
+                                  "SystemMonitor": {
+                                    "allowUserSettings": true,
+                                    "showCpuUsage": true,
+                                    "showCpuTemp": true,
+                                    "showMemoryUsage": true,
+                                    "showMemoryAsPercent": false,
+                                    "showNetworkStats": false,
+                                    "showDiskUsage": false
+                                  },
+                                  "Workspace": {
+                                    "allowUserSettings": true,
+                                    "labelMode": "index",
+                                    "hideUnoccupied": false
+                                  },
+                                  "MediaMini": {
+                                    "allowUserSettings": true,
+                                    "showAlbumArt": false,
+                                    "showVisualizer": false,
+                                    "visualizerType": "linear"
+                                  },
+                                  "ControlCenter": {
+                                    "allowUserSettings": true,
+                                    "useDistroLogo": false,
+                                    "icon": "noctalia",
+                                    "customIconPath": ""
+                                  },
+                                  "Volume": {
+                                    "allowUserSettings": true,
+                                    "displayMode": "onhover"
+                                  },
+                                  "KeyboardLayout": {
+                                    "allowUserSettings": true,
+                                    "displayMode": "onhover"
+                                  }
+                                })
 
   // Component definitions - these are loaded once at startup
   property Component activeWindowComponent: Component {
     ActiveWindow {}
-  }
-  property Component archUpdaterComponent: Component {
-    ArchUpdater {}
   }
   property Component batteryComponent: Component {
     Battery {}
@@ -52,11 +132,17 @@ Singleton {
   property Component clockComponent: Component {
     Clock {}
   }
-  property Component darkModeToggle: Component {
-    DarkModeToggle {}
+  property Component customButtonComponent: Component {
+    CustomButton {}
+  }
+  property Component darkMode: Component {
+    DarkMode {}
   }
   property Component keyboardLayoutComponent: Component {
     KeyboardLayout {}
+  }
+  property Component keepAwakeComponent: Component {
+    KeepAwake {}
   }
   property Component mediaMiniComponent: Component {
     MediaMini {}
@@ -73,11 +159,17 @@ Singleton {
   property Component powerProfileComponent: Component {
     PowerProfile {}
   }
-  property Component screenRecorderIndicatorComponent: Component {
-    ScreenRecorderIndicator {}
+  property Component sessionMenuComponent: Component {
+    SessionMenu {}
   }
-  property Component sidePanelToggleComponent: Component {
-    SidePanelToggle {}
+  property Component screenRecorderComponent: Component {
+    ScreenRecorder {}
+  }
+  property Component controlCenterComponent: Component {
+    ControlCenter {}
+  }
+  property Component spacerComponent: Component {
+    Spacer {}
   }
   property Component systemMonitorComponent: Component {
     SystemMonitor {}
@@ -91,6 +183,9 @@ Singleton {
   property Component wiFiComponent: Component {
     WiFi {}
   }
+  property Component wallpaperSelectorComponent: Component {
+    WallpaperSelector {}
+  }
   property Component workspaceComponent: Component {
     Workspace {}
   }
@@ -100,37 +195,22 @@ Singleton {
 
   // ------------------------------
   // Helper function to get widget component by name
-  function getWidget(name) {
-    return widgets[name] || null
+  function getWidget(id) {
+    return widgets[id] || null
   }
 
   // Helper function to check if widget exists
-  function hasWidget(name) {
-    return name in widgets
+  function hasWidget(id) {
+    return id in widgets
   }
 
-  // Get list of available widget names
+  // Get list of available widget id
   function getAvailableWidgets() {
     return Object.keys(widgets)
   }
 
-  function getNPillDirection(widget) {
-    try {
-      if (widget.barSection === "leftSection") {
-        return true
-      } else if (widget.barSection === "rightSection") {
-        return false
-      } else {
-        // middle section
-        if (widget.sectionWidgetIndex < widget.sectionWidgetsCount / 2) {
-          return false
-        } else {
-          return true
-        }
-      }
-    } catch (e) {
-      Logger.error(e)
-    }
-    return false
+  // Helper function to check if widget has user settings
+  function widgetHasUserSettings(id) {
+    return (widgetMetadata[id] !== undefined) && (widgetMetadata[id].allowUserSettings === true)
   }
 }

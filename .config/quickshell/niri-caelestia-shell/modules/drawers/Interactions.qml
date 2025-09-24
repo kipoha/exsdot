@@ -35,6 +35,10 @@ CustomMouseArea {
         return x >= panelX - Config.border.rounding && x <= panelX + panel.width + Config.border.rounding;
     }
 
+    function inLeftPanel(panel: Item, x: real, y: real): bool {
+        return x < bar.implicitWidth + panel.x + panel.width && withinPanelHeight(panel, x, y);
+    }
+
     function inRightPanel(panel: Item, x: real, y: real): bool {
         return x > bar.implicitWidth + panel.x && withinPanelHeight(panel, x, y);
     }
@@ -49,18 +53,7 @@ CustomMouseArea {
 
     function onWheel(event: WheelEvent): void {
         if (event.x < bar.implicitWidth) {
-            if (event.y < screen.height / 2) {
-                if (event.angleDelta.y > 0)
-                    Audio.incrementVolume();
-                else if (event.angleDelta.y < 0)
-                    Audio.decrementVolume();
-            } else {
-                const monitor = Brightness.getMonitorForScreen(screen);
-                if (event.angleDelta.y > 0)
-                    monitor.setBrightness(monitor.brightness + 0.1);
-                else if (event.angleDelta.y < 0)
-                    monitor.setBrightness(monitor.brightness - 0.1);
-            }
+            bar.handleWheel(event.y, event.angleDelta);
         }
     }
 
@@ -142,8 +135,10 @@ CustomMouseArea {
                 visibilities.session = false;
         }
 
-        // Show/hide launcher on drag
-        if (pressed && inBottomPanel(panels.launcher, dragStart.x, dragStart.y) && withinPanelWidth(panels.launcher, x, y)) {
+        // Show launcher on hover, or show/hide on drag if hover is disabled
+        if (Config.launcher.showOnHover) {
+            visibilities.launcher = inBottomPanel(panels.launcher, x, y);
+        } else if (pressed && inBottomPanel(panels.launcher, dragStart.x, dragStart.y) && withinPanelWidth(panels.launcher, x, y)) {
             const dragY = y - dragStart.y;
             if (dragY < -Config.launcher.dragThreshold)
                 visibilities.launcher = true;
@@ -186,6 +181,8 @@ CustomMouseArea {
         // Show popouts on hover
         if (x < bar.implicitWidth)
             bar.checkPopout(y);
+        else if (!popouts.currentName.startsWith("traymenu") && !inLeftPanel(panels.popouts, x, y))
+            popouts.hasCurrent = false;
     }
 
     // Monitor individual visibility changes
